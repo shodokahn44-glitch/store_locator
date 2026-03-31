@@ -23,6 +23,52 @@ body {
   color: #ffffff;
 }
 
+.address-row {
+  align-items: flex-start;
+}
+
+.address-row {
+  align-items: flex-start;
+}
+
+#detail_address_link {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.detail-address-actions {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 18px;
+  flex-wrap: wrap;
+}
+
+.detail-address-actions .retro-btn {
+  min-width: 160px;
+}
+
+#detail_address_link {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.detail-address-actions {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 18px;
+  flex-wrap: wrap;
+}
+
+.detail-address-actions .retro-btn {
+  min-width: 160px;
+}
+
 .store-link {
   color: #6cf;
   text-decoration: underline;

@@ -27,8 +27,7 @@ function ensureSecurityMetaTag(): void {
 
   const meta = document.createElement("meta");
   meta.httpEquiv = "Content-Security-Policy";
-  meta.content =
-    "upgrade-insecure-requests; block-all-mixed-content;";
+  meta.content = "upgrade-insecure-requests; block-all-mixed-content;";
   document.head.appendChild(meta);
 }
 
@@ -370,9 +369,14 @@ app.innerHTML = `
               <span id="detail_store_name"></span>
             </div>
 
-            <div class="store-detail-row">
+            <div class="store-detail-row address-row">
               <strong>Address:</strong>
               <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+
+            <div class="detail-address-actions">
+              <button id="detail_directions_btn" class="retro-btn accent" type="button">Get Directions</button>
+              <button id="detail_copy_btn" class="retro-btn secondary" type="button">Copy Address</button>
             </div>
           </div>
 
@@ -404,13 +408,18 @@ function formatAddress(store: StoreRow): string {
     store.country,
   ]
     .filter(Boolean)
-    .map((p) => p!.trim())
+    .map((part) => String(part).trim())
     .join(", ");
 }
 
 function buildGoogleMapsLink(store: StoreRow): string {
   const fullAddress = formatAddress(store);
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+}
+
+function buildGoogleMapsDirectionsLink(store: StoreRow): string {
+  const fullAddress = formatAddress(store);
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`;
 }
 
 function getHoursValue(value?: string): string {
@@ -437,6 +446,8 @@ function openStoreDetailModal(store: StoreRow): void {
   if (!modal) return;
 
   const addressLink = document.getElementById("detail_address_link") as HTMLAnchorElement | null;
+  const directionsBtn = document.getElementById("detail_directions_btn") as HTMLButtonElement | null;
+  const copyBtn = document.getElementById("detail_copy_btn") as HTMLButtonElement | null;
 
   const storeNameEl = document.getElementById("detail_store_name");
 
@@ -448,15 +459,42 @@ function openStoreDetailModal(store: StoreRow): void {
   const fridayEl = document.getElementById("detail_friday_hours");
   const saturdayEl = document.getElementById("detail_saturday_hours");
 
+  const fullAddress = formatAddress(store);
+  const mapsUrl = fullAddress ? buildGoogleMapsLink(store) : "#";
+  const directionsUrl = fullAddress ? buildGoogleMapsDirectionsLink(store) : "#";
+
   if (storeNameEl) storeNameEl.textContent = store.store_name ?? "";
 
-if (addressLink) {
-  const fullAddress = formatAddress(store);
-  addressLink.textContent = fullAddress || "Address not available";
-  addressLink.href = fullAddress
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`
-    : "#";
-}
+  if (addressLink) {
+    addressLink.textContent = fullAddress || "Address not available";
+    addressLink.href = mapsUrl;
+    addressLink.style.pointerEvents = fullAddress ? "auto" : "none";
+  }
+
+  if (directionsBtn) {
+    directionsBtn.disabled = !fullAddress;
+    directionsBtn.onclick = () => {
+      if (!fullAddress) return;
+      window.location.href = directionsUrl;
+    };
+  }
+
+  if (copyBtn) {
+    copyBtn.disabled = !fullAddress;
+    copyBtn.onclick = async () => {
+      if (!fullAddress) return;
+
+      try {
+        await navigator.clipboard.writeText(fullAddress);
+        showToast("Address copied 📋");
+        setStatus("Address copied to clipboard.");
+      } catch (error) {
+        console.error("Failed to copy address:", error);
+        showToast("Copy failed");
+        setStatus("Could not copy address.");
+      }
+    };
+  }
 
   if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday_hours);
   if (mondayEl) mondayEl.textContent = getHoursValue(store.monday_hours);
