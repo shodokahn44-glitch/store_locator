@@ -122,13 +122,13 @@ interface StoreRow {
   zip?: string;
   phone_number?: string;
   country?: string;
-  sunday_hours?: string;
-  monday_hours?: string;
-  tuesday_hours?: string;
-  wednesday_hours?: string;
-  thursday_hours?: string;
-  friday_hours?: string;
-  saturday_hours?: string;
+  sunday?: string;
+  monday?: string;
+  tuesday?: string;
+  wednesday?: string;
+  thursday?: string;
+  friday?: string;
+  saturday?: string;
   nes_quest?: boolean;
   n64_quest?: boolean;
   snes_quest?: boolean;
@@ -552,13 +552,13 @@ function openStoreDetailModal(store: StoreRow): void {
     }
   }
 
-  if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday_hours);
-  if (mondayEl) mondayEl.textContent = getHoursValue(store.monday_hours);
-  if (tuesdayEl) tuesdayEl.textContent = getHoursValue(store.tuesday_hours);
-  if (wednesdayEl) wednesdayEl.textContent = getHoursValue(store.wednesday_hours);
-  if (thursdayEl) thursdayEl.textContent = getHoursValue(store.thursday_hours);
-  if (fridayEl) fridayEl.textContent = getHoursValue(store.friday_hours);
-  if (saturdayEl) saturdayEl.textContent = getHoursValue(store.saturday_hours);
+if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday);
+if (mondayEl) mondayEl.textContent = getHoursValue(store.monday);
+if (tuesdayEl) tuesdayEl.textContent = getHoursValue(store.tuesday);
+if (wednesdayEl) wednesdayEl.textContent = getHoursValue(store.wednesday);
+if (thursdayEl) thursdayEl.textContent = getHoursValue(store.thursday);
+if (fridayEl) fridayEl.textContent = getHoursValue(store.friday);
+if (saturdayEl) saturdayEl.textContent = getHoursValue(store.saturday);
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -810,23 +810,23 @@ async function addStore(): Promise<void> {
     return;
   }
 
-  const payload = {
-    store_name: values.store_name,
-    address: values.address,
-    address_2: values.address_2 || "",
-    city: values.city,
-    state: values.state,
-    zip: values.zip,
-    phone_number: values.phone_number,
-    country: values.country,
-    sunday_hours: values.sunday_hours,
-    monday_hours: values.monday_hours,
-    tuesday_hours: values.tuesday_hours,
-    wednesday_hours: values.wednesday_hours,
-    thursday_hours: values.thursday_hours,
-    friday_hours: values.friday_hours,
-    saturday_hours: values.saturday_hours,
-  };
+const payload = {
+  store_name: values.store_name,
+  address: values.address,
+  address_2: values.address_2 || "",
+  city: values.city,
+  state: values.state,
+  zip: values.zip,
+  phone_number: values.phone_number,
+  country: values.country,
+  sunday: values.sunday_hours,
+  monday: values.monday_hours,
+  tuesday: values.tuesday_hours,
+  wednesday: values.wednesday_hours,
+  thursday: values.thursday_hours,
+  friday: values.friday_hours,
+  saturday: values.saturday_hours,
+};
 
   try {
     setStatus("Saving store...");
