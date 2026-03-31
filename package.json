@@ -5,8 +5,8 @@
   "type": "commonjs",
   "scripts": {
     "dev": "concurrently \"vite\" \"ts-node server.ts\"",
-    "build": "vite build && tsc server.ts --outDir . --module commonjs --esModuleInterop true",
-    "start": "node server.js"
+    "build": "vite build && tsc",
+    "start": "node build/server.js"
   },
   "dependencies": {
     "ag-grid-community": "^32.0.0",

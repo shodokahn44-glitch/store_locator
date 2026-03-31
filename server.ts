@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 const client = new MongoClient(MONGO_URI);
-const distPath = path.join(__dirname, "dist");
+const distPath = path.join(process.cwd(), "dist");
 
 interface StoreDocument {
   store_id: number;
