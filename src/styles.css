@@ -81,7 +81,7 @@ body {
 }
 
 .store-detail-card {
-  max-width: 700px;
+  max-width: 860px;
   width: 92%;
 }
 
@@ -97,6 +97,33 @@ body {
   gap: 10px;
 }
 
+.store-detail-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 20px;
+  align-items: start;
+}
+
+.store-detail-info {
+  min-width: 0;
+}
+
+.store-detail-badge-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 180px;
+}
+
+.quest-participant-badge {
+  max-width: 100%;
+  max-height: 180px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .store-detail-row {
   display: flex;
   gap: 8px;
@@ -104,8 +131,8 @@ body {
 }
 
 #detail_address_link {
-  white-space: nowrap;
-  overflow-x: auto;
+  white-space: normal;
+  overflow-x: visible;
 }
 
 #detail_address_link:hover {
@@ -503,6 +530,19 @@ input[type="time"] {
 
   .hero-logo {
     width: min(100%, 420px);
+  }
+
+  .store-detail-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .store-detail-badge-wrap {
+    justify-content: flex-start;
+    min-height: 0;
+  }
+
+  .quest-participant-badge {
+    max-height: 160px;
   }
 }
 

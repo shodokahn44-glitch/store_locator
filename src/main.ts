@@ -3,6 +3,11 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
 
+const nesQuestParticipant = "/nesQuestParticipant.png";
+const n64QuestParticipant = "/n64QuestParticipant.png";
+const snesQuestParticipant = "/snesQuestParticipant.png";
+const allQuestParticipant = "/allQuestParticipant.png";
+
 /**
  * Security hardening:
  * - force HTTPS on production domain
@@ -124,6 +129,9 @@ interface StoreRow {
   thursday_hours?: string;
   friday_hours?: string;
   saturday_hours?: string;
+  nes_quest?: boolean;
+  n64_quest?: boolean;
+  snes_quest?: boolean;
 }
 
 interface FormValues {
@@ -364,19 +372,27 @@ app.innerHTML = `
 
         <div class="store-detail-body">
           <div class="store-detail-section">
-            <div class="store-detail-row">
-              <strong>Store Name:</strong>
-              <span id="detail_store_name"></span>
-            </div>
+            <div class="store-detail-main-grid">
+              <div class="store-detail-info">
+                <div class="store-detail-row">
+                  <strong>Store Name:</strong>
+                  <span id="detail_store_name"></span>
+                </div>
 
-            <div class="store-detail-row address-row">
-              <strong>Address:</strong>
-              <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
-            </div>
+                <div class="store-detail-row address-row">
+                  <strong>Address:</strong>
+                  <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                </div>
 
-            <div class="detail-address-actions">
-              <button id="detail_directions_btn" class="retro-btn accent" type="button">Get Directions</button>
-              <button id="detail_copy_btn" class="retro-btn secondary" type="button">Copy Address</button>
+                <div class="detail-address-actions">
+                  <button id="detail_directions_btn" class="retro-btn accent" type="button">Get Directions</button>
+                  <button id="detail_copy_btn" class="retro-btn secondary" type="button">Copy Address</button>
+                </div>
+              </div>
+
+              <div class="store-detail-badge-wrap">
+                <img id="detail_quest_badge" class="quest-participant-badge hidden" alt="Quest Participant Badge" />
+              </div>
             </div>
           </div>
 
@@ -441,6 +457,32 @@ function buildDayHours(openId: string, closeId: string): string {
   return `Closes at ${close}`;
 }
 
+function getQuestBadgeSrc(store: StoreRow): string | null {
+  const nes = store.nes_quest === true;
+  const n64 = store.n64_quest === true;
+  const snes = store.snes_quest === true;
+
+  if (nes && n64 && snes) return allQuestParticipant;
+  if (nes) return nesQuestParticipant;
+  if (n64) return n64QuestParticipant;
+  if (snes) return snesQuestParticipant;
+
+  return null;
+}
+
+function getQuestBadgeAlt(store: StoreRow): string {
+  const nes = store.nes_quest === true;
+  const n64 = store.n64_quest === true;
+  const snes = store.snes_quest === true;
+
+  if (nes && n64 && snes) return "Nintendo Quest, Super Nintendo Quest, and Nintendo 64 Quest Participant";
+  if (nes) return "Nintendo Quest Participant";
+  if (n64) return "Nintendo 64 Quest Participant";
+  if (snes) return "Super Nintendo Quest Participant";
+
+  return "Quest Participant";
+}
+
 function openStoreDetailModal(store: StoreRow): void {
   const modal = document.getElementById("storeDetailModal");
   if (!modal) return;
@@ -448,6 +490,7 @@ function openStoreDetailModal(store: StoreRow): void {
   const addressLink = document.getElementById("detail_address_link") as HTMLAnchorElement | null;
   const directionsBtn = document.getElementById("detail_directions_btn") as HTMLButtonElement | null;
   const copyBtn = document.getElementById("detail_copy_btn") as HTMLButtonElement | null;
+  const badgeImg = document.getElementById("detail_quest_badge") as HTMLImageElement | null;
 
   const storeNameEl = document.getElementById("detail_store_name");
 
@@ -462,6 +505,7 @@ function openStoreDetailModal(store: StoreRow): void {
   const fullAddress = formatAddress(store);
   const mapsUrl = fullAddress ? buildGoogleMapsLink(store) : "#";
   const directionsUrl = fullAddress ? buildGoogleMapsDirectionsLink(store) : "#";
+  const badgeSrc = getQuestBadgeSrc(store);
 
   if (storeNameEl) storeNameEl.textContent = store.store_name ?? "";
 
@@ -494,6 +538,18 @@ function openStoreDetailModal(store: StoreRow): void {
         setStatus("Could not copy address.");
       }
     };
+  }
+
+  if (badgeImg) {
+    if (badgeSrc) {
+      badgeImg.src = badgeSrc;
+      badgeImg.alt = getQuestBadgeAlt(store);
+      badgeImg.classList.remove("hidden");
+    } else {
+      badgeImg.removeAttribute("src");
+      badgeImg.alt = "";
+      badgeImg.classList.add("hidden");
+    }
   }
 
   if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday_hours);
