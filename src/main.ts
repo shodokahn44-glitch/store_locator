@@ -3,6 +3,8 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
 
+const API_BASE = "https://store-locator-api.onrender.com";
+
 // AUDIO
 const bgMusic = new Audio("/background.mp3");
 bgMusic.loop = true;
@@ -380,8 +382,7 @@ function buildGoogleMapsLink(store: StoreRow): string {
 }
 
 function formatAddress(store: StoreRow): string {
-  const parts = [store.address ?? "", store.address_2 ?? ""].filter(Boolean);
-  return parts.join(", ");
+  return [store.address ?? "", store.address_2 ?? ""].filter(Boolean).join(", ");
 }
 
 function getHoursValue(value?: string): string {
@@ -461,9 +462,7 @@ const columnDefs: ColDef<StoreRow>[] = [
 
       link.addEventListener("click", (event) => {
         event.preventDefault();
-        if (params.data) {
-          openStoreDetailModal(params.data);
-        }
+        if (params.data) openStoreDetailModal(params.data);
       });
 
       return link;
@@ -478,9 +477,7 @@ const columnDefs: ColDef<StoreRow>[] = [
 ];
 
 const gridElement = document.querySelector<HTMLDivElement>("#storeGrid");
-if (!gridElement) {
-  throw new Error("Grid element not found.");
-}
+if (!gridElement) throw new Error("Grid element not found.");
 
 const gridOptions: GridOptions<StoreRow> = {
   columnDefs,
@@ -520,16 +517,12 @@ function getInputValue(id: string): string {
 
 function setInputValue(id: string, value: string): void {
   const element = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
-  if (element) {
-    element.value = value;
-  }
+  if (element) element.value = value;
 }
 
 function setStatus(message: string): void {
   const status = document.getElementById("status");
-  if (status) {
-    status.textContent = message;
-  }
+  if (status) status.textContent = message;
 }
 
 function showToast(message: string): void {
@@ -539,9 +532,7 @@ function showToast(message: string): void {
   toast.textContent = message;
   toast.classList.add("show");
 
-  if (toastTimer !== null) {
-    window.clearTimeout(toastTimer);
-  }
+  if (toastTimer !== null) window.clearTimeout(toastTimer);
 
   toastTimer = window.setTimeout(() => {
     toast.classList.remove("show");
@@ -644,15 +635,11 @@ async function fetchStores(): Promise<void> {
     const values = getFormValues();
 
     Object.entries(values).forEach(([key, value]) => {
-      if (value !== "") {
-        params.append(key, value);
-      }
+      if (value !== "") params.append(key, value);
     });
 
-    const response = await fetch(`/api/stores?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch stores");
-    }
+    const response = await fetch(`${API_BASE}/api/stores?${params.toString()}`);
+    if (!response.ok) throw new Error("Failed to fetch stores");
 
     const data = (await response.json()) as StoreRow[];
     setGridRows(data);
@@ -715,7 +702,7 @@ async function addStore(): Promise<void> {
   try {
     setStatus("Saving store...");
 
-    const res = await fetch("/api/stores", {
+    const res = await fetch(`${API_BASE}/api/stores`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -793,15 +780,11 @@ document.getElementById("closeStoreDetailBtn")?.addEventListener("click", () => 
 });
 
 document.getElementById("addStoreModal")?.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) {
-    closeAddStoreModal();
-  }
+  if (event.target === event.currentTarget) closeAddStoreModal();
 });
 
 document.getElementById("storeDetailModal")?.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) {
-    closeStoreDetailModal();
-  }
+  if (event.target === event.currentTarget) closeStoreDetailModal();
 });
 
 document.addEventListener("keydown", (event) => {
