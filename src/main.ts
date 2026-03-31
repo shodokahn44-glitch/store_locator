@@ -3,7 +3,7 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
 
-const API_BASE = "https://store-locator-api.onrender.com";
+const API_BASE = "https://store-locator-api-5stv.onrender.com";
 
 // AUDIO
 const bgMusic = new Audio("/background.mp3");
@@ -389,6 +389,11 @@ function getHoursValue(value?: string): string {
   return value && value.trim() ? value : "Not Available";
 }
 
+function getInputValue(id: string): string {
+  const element = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+  return element?.value ?? "";
+}
+
 function buildDayHours(openId: string, closeId: string): string {
   const open = getInputValue(openId).trim();
   const close = getInputValue(closeId).trim();
@@ -508,11 +513,6 @@ function setGridRows(rows: StoreRow[]): void {
   }
 
   console.error("No supported AG Grid row update method found.");
-}
-
-function getInputValue(id: string): string {
-  const element = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
-  return element?.value ?? "";
 }
 
 function setInputValue(id: string, value: string): void {
@@ -638,7 +638,12 @@ async function fetchStores(): Promise<void> {
       if (value !== "") params.append(key, value);
     });
 
-    const response = await fetch(`${API_BASE}/api/stores?${params.toString()}`);
+    const queryString = params.toString();
+    const url = queryString
+      ? `${API_BASE}/api/stores?${queryString}`
+      : `${API_BASE}/api/stores`;
+
+    const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to fetch stores");
 
     const data = (await response.json()) as StoreRow[];
