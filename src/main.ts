@@ -409,21 +409,23 @@ app.innerHTML = `
   </div>
 `;
 
-function buildGoogleMapsLink(store: StoreRow): string {
-  const parts = [
+function formatAddress(store: StoreRow): string {
+  return [
     store.address ?? "",
     store.address_2 ?? "",
     store.city ?? "",
     store.state ?? "",
     store.zip ?? "",
     store.country ?? "",
-  ].filter(Boolean);
-
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
+  ]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
 }
 
-function formatAddress(store: StoreRow): string {
-  return [store.address ?? "", store.address_2 ?? ""].filter(Boolean).join(", ");
+function buildGoogleMapsLink(store: StoreRow): string {
+  const fullAddress = formatAddress(store);
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
 }
 
 function getHoursValue(value?: string): string {
@@ -470,8 +472,9 @@ function openStoreDetailModal(store: StoreRow): void {
   if (zipEl) zipEl.textContent = store.zip ?? "";
 
   if (addressLink) {
-    addressLink.textContent = formatAddress(store);
-    addressLink.href = buildGoogleMapsLink(store);
+    const fullAddress = formatAddress(store);
+    addressLink.textContent = fullAddress || "Address not available";
+    addressLink.href = fullAddress ? buildGoogleMapsLink(store) : "#";
   }
 
   if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday_hours);
