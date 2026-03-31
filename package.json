@@ -2,30 +2,25 @@
   "name": "store-locator",
   "version": "1.0.0",
   "private": true,
-  "main": "dist-server/server.js",
-  "type": "module",
-
+  "type": "commonjs",
   "scripts": {
     "dev": "concurrently \"vite\" \"ts-node server.ts\"",
-    "build": "vite build && tsc server.ts --outDir . --esModuleInterop",
+    "build": "vite build && tsc server.ts --outDir . --module commonjs --esModuleInterop true",
     "start": "node server.js"
   },
-
   "dependencies": {
-    "ag-grid-community": "^32.2.2",
-    "cors": "^2.8.6",
-    "dotenv": "^16.4.5",
+    "ag-grid-community": "^32.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
     "express": "^4.19.2",
-    "mongodb": "^6.8.0",
-    "object-assign": "^4.1.1"
+    "mongodb": "^6.3.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.5.4",
-    "concurrently": "^9.0.1",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "concurrently": "^8.2.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.8"
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
   }
 }

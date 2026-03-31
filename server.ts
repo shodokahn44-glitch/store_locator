@@ -68,6 +68,7 @@ function normalizeText(value: unknown): string {
 
 async function ensureCounterDocument(): Promise<void> {
   const counters = getCountersCollection();
+
   await counters.updateOne(
     { _id: "store_id" },
     { $setOnInsert: { seq: 0 } },
@@ -267,7 +268,7 @@ app.post("/api/stores", async (req: Request, res: Response) => {
 });
 
 /**
- * Serve the Vite build output
+ * Serve static frontend files from Vite build output
  */
 app.use(express.static(distPath));
 
