@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import { MongoClient, MongoServerError } from "mongodb";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import type { Collection, Db } from "mongodb";
 
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 const client = new MongoClient(MONGO_URI);
+const distPath = path.join(__dirname, "dist");
 
 interface StoreDocument {
   store_id: number;
@@ -116,6 +118,16 @@ async function syncStoreIdCounterToMax(): Promise<void> {
 
   console.log(`store_id counter synced to at least ${maxStoreId}`);
 }
+
+/**
+ * Redirect /index.html to /
+ */
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path === "/index.html") {
+    return res.redirect(301, "/");
+  }
+  next();
+});
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true });
@@ -254,6 +266,29 @@ app.post("/api/stores", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Serve the Vite build output
+ */
+app.use(express.static(distPath));
+
+/**
+ * SPA fallback:
+ * - lets clean URLs work
+ * - ignores API routes
+ * - returns 404 for missing real file requests
+ */
+app.get("*", (req: Request, res: Response) => {
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ error: "API route not found." });
+  }
+
+  if (path.extname(req.path)) {
+    return res.status(404).send("File not found");
+  }
+
+  return res.sendFile(path.join(distPath, "index.html"));
+});
+
 async function start(): Promise<void> {
   await client.connect();
   await ensureIndexes();
@@ -261,7 +296,8 @@ async function start(): Promise<void> {
   await syncStoreIdCounterToMax();
 
   app.listen(PORT, () => {
-    console.log(`Store Locator API running on http://localhost:${PORT}`);
+    console.log(`Store Locator running on port ${PORT}`);
+    console.log(`Frontend dist path: ${distPath}`);
     console.log(`Mongo DB: ${DB_NAME}`);
     console.log(`Collection: ${COLLECTION_NAME}`);
   });
