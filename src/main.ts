@@ -3,15 +3,56 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
 
-const API_BASE = "https://store-locator-api-5stv.onrender.com";
+/**
+ * Security hardening:
+ * - force HTTPS on production domain
+ * - upgrade any accidental insecure asset requests
+ */
+if (
+  window.location.hostname === "nathansalyer.com" ||
+  window.location.hostname === "www.nathansalyer.com"
+) {
+  if (window.location.protocol !== "https:") {
+    window.location.replace(
+      `https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`
+    );
+  }
+}
+
+function ensureSecurityMetaTag(): void {
+  const existing = document.querySelector(
+    'meta[http-equiv="Content-Security-Policy"]'
+  );
+  if (existing) return;
+
+  const meta = document.createElement("meta");
+  meta.httpEquiv = "Content-Security-Policy";
+  meta.content =
+    "upgrade-insecure-requests; block-all-mixed-content;";
+  document.head.appendChild(meta);
+}
+
+ensureSecurityMetaTag();
+
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3000"
+    : "https://store-locator-api-5stv.onrender.com";
+
+function assetUrl(path: string): string {
+  return new URL(path, window.location.origin).toString();
+}
 
 // AUDIO
-const bgMusic = new Audio("/background.mp3");
+const bgMusic = new Audio(assetUrl("/background.mp3"));
 bgMusic.loop = true;
 bgMusic.volume = 0.25;
+bgMusic.preload = "auto";
 
-const clickSound = new Audio("/click.mp3");
+const clickSound = new Audio(assetUrl("/click.mp3"));
 clickSound.volume = 0.5;
+clickSound.preload = "auto";
 
 function playClick(): void {
   clickSound.currentTime = 0;
@@ -124,7 +165,7 @@ app.innerHTML = `
   <div class="page retro-shell">
     <header class="page-hero">
       <div class="hero-logo-wrap">
-        <img src="/logo.png" alt="Neo Retro Store Locator" class="hero-logo" />
+        <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo" />
       </div>
       <p class="hero-tagline">Search stores, add new locations, and keep the catalog synced.</p>
     </header>
@@ -643,7 +684,12 @@ async function fetchStores(): Promise<void> {
       ? `${API_BASE}/api/stores?${queryString}`
       : `${API_BASE}/api/stores`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: "GET",
+      mode: "cors",
+      credentials: "omit",
+    });
+
     if (!response.ok) throw new Error("Failed to fetch stores");
 
     const data = (await response.json()) as StoreRow[];
@@ -709,6 +755,8 @@ async function addStore(): Promise<void> {
 
     const res = await fetch(`${API_BASE}/api/stores`, {
       method: "POST",
+      mode: "cors",
+      credentials: "omit",
       headers: {
         "Content-Type": "application/json",
       },
