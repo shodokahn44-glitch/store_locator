@@ -2,7 +2,6 @@
   "name": "store-locator",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
   "scripts": {
     "dev": "concurrently \"vite\" \"ts-node server.ts\"",
     "build": "vite build && tsc",
