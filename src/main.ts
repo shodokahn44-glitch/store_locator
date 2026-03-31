@@ -374,21 +374,6 @@ app.innerHTML = `
               <strong>Address:</strong>
               <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
             </div>
-
-            <div class="store-detail-row">
-              <strong>City:</strong>
-              <span id="detail_city"></span>
-            </div>
-
-            <div class="store-detail-row">
-              <strong>State / Province:</strong>
-              <span id="detail_state"></span>
-            </div>
-
-            <div class="store-detail-row">
-              <strong>Zip Code:</strong>
-              <span id="detail_zip"></span>
-            </div>
           </div>
 
           <div class="store-detail-section">
@@ -411,15 +396,15 @@ app.innerHTML = `
 
 function formatAddress(store: StoreRow): string {
   return [
-    store.address ?? "",
-    store.address_2 ?? "",
-    store.city ?? "",
-    store.state ?? "",
-    store.zip ?? "",
-    store.country ?? "",
+    store.address,
+    store.address_2,
+    store.city,
+    store.state,
+    store.zip,
+    store.country,
   ]
-    .map((part) => part.trim())
     .filter(Boolean)
+    .map((p) => p!.trim())
     .join(", ");
 }
 
@@ -454,9 +439,6 @@ function openStoreDetailModal(store: StoreRow): void {
   const addressLink = document.getElementById("detail_address_link") as HTMLAnchorElement | null;
 
   const storeNameEl = document.getElementById("detail_store_name");
-  const cityEl = document.getElementById("detail_city");
-  const stateEl = document.getElementById("detail_state");
-  const zipEl = document.getElementById("detail_zip");
 
   const sundayEl = document.getElementById("detail_sunday_hours");
   const mondayEl = document.getElementById("detail_monday_hours");
@@ -467,15 +449,14 @@ function openStoreDetailModal(store: StoreRow): void {
   const saturdayEl = document.getElementById("detail_saturday_hours");
 
   if (storeNameEl) storeNameEl.textContent = store.store_name ?? "";
-  if (cityEl) cityEl.textContent = store.city ?? "";
-  if (stateEl) stateEl.textContent = store.state ?? "";
-  if (zipEl) zipEl.textContent = store.zip ?? "";
 
-  if (addressLink) {
-    const fullAddress = formatAddress(store);
-    addressLink.textContent = fullAddress || "Address not available";
-    addressLink.href = fullAddress ? buildGoogleMapsLink(store) : "#";
-  }
+if (addressLink) {
+  const fullAddress = formatAddress(store);
+  addressLink.textContent = fullAddress || "Address not available";
+  addressLink.href = fullAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`
+    : "#";
+}
 
   if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday_hours);
   if (mondayEl) mondayEl.textContent = getHoursValue(store.monday_hours);

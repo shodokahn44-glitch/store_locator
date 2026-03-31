@@ -58,8 +58,8 @@ body {
 }
 
 #detail_address_link {
-  color: #6cf;
-  text-decoration: underline;
+  white-space: nowrap;
+  overflow-x: auto;
 }
 
 #detail_address_link:hover {
