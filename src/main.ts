@@ -38,6 +38,8 @@ function ensureSecurityMetaTag(): void {
 
 ensureSecurityMetaTag();
 
+// Local dev uses localhost backend.
+// Production uses same-origin so the deployed frontend talks to its own Express API.
 const API_BASE =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
@@ -820,20 +822,31 @@ async function fetchStores(): Promise<void> {
       ? `${API_BASE}/api/stores?${queryString}`
       : `${API_BASE}/api/stores`;
 
+    console.log("Fetching stores from:", url);
+
     const response = await fetch(url, {
       method: "GET",
-      mode: "cors",
       credentials: "omit",
     });
 
-    if (!response.ok) throw new Error("Failed to fetch stores");
+    const rawText = await response.text();
+    console.log("Response status:", response.status);
+    console.log("Response body:", rawText);
 
-    const data = (await response.json()) as StoreRow[];
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${rawText}`);
+    }
+
+    const data = JSON.parse(rawText) as StoreRow[];
     setGridRows(data);
     setStatus(`${data.length} store(s) found.`);
   } catch (error) {
-    console.error(error);
-    setStatus("Error loading store data.");
+    console.error("fetchStores failed:", error);
+    setStatus(
+      error instanceof Error
+        ? `Error loading store data: ${error.message}`
+        : "Error loading store data."
+    );
   }
 }
 
@@ -891,7 +904,6 @@ async function addStore(): Promise<void> {
 
     const res = await fetch(`${API_BASE}/api/stores`, {
       method: "POST",
-      mode: "cors",
       credentials: "omit",
       headers: {
         "Content-Type": "application/json",
@@ -899,12 +911,15 @@ async function addStore(): Promise<void> {
       body: JSON.stringify(payload),
     });
 
-    const result = await res.json();
+    const rawText = await res.text();
+    console.log("Add store status:", res.status);
+    console.log("Add store body:", rawText);
 
     if (!res.ok) {
-      setStatus(result.error || "Failed to add store.");
-      return;
+      throw new Error(`HTTP ${res.status}: ${rawText}`);
     }
+
+    const result = JSON.parse(rawText);
 
     clearAddForm();
     closeAddStoreModal();
@@ -912,8 +927,10 @@ async function addStore(): Promise<void> {
     setStatus(`Store added successfully. Store ID: ${result.store_id}`);
     await fetchStores();
   } catch (err) {
-    console.error(err);
-    setStatus("Error adding store.");
+    console.error("addStore failed:", err);
+    setStatus(
+      err instanceof Error ? `Error adding store: ${err.message}` : "Error adding store."
+    );
   }
 }
 

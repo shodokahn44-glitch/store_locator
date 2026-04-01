@@ -20,7 +20,6 @@ if (!MONGO_URI) {
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 const appRoot = path_1.default.resolve();
-// Serve Vite build
 app.use(express_1.default.static(path_1.default.join(appRoot, "dist")));
 let client;
 let db;
@@ -146,7 +145,7 @@ app.post("/api/stores", async (req, res) => {
         return res.status(500).json({ error: "Failed to add store." });
     }
 });
-// SPA fallback route - must be last
+// SPA fallback route - keep last
 app.get("*", (_req, res) => {
     res.sendFile(path_1.default.join(appRoot, "dist", "index.html"));
 });
