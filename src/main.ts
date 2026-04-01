@@ -439,6 +439,15 @@ app.innerHTML = `
   </div>
 `;
 
+function ensureGridIsVisible(): void {
+  const gridEl = document.getElementById("storeGrid") as HTMLDivElement | null;
+  if (!gridEl) return;
+
+  gridEl.style.width = "100%";
+  gridEl.style.height = "560px";
+  gridEl.style.minHeight = "560px";
+}
+
 function getAddress2Value(store: StoreRow): string {
   return String(store.address_2 ?? store["address 2"] ?? "").trim();
 }
@@ -699,8 +708,13 @@ const gridOptions: GridOptions<StoreRow> = {
   rowData: [],
   pagination: true,
   paginationPageSize: 25,
+  animateRows: true,
   defaultColDef: {
     resizable: true,
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 120,
   },
 };
 
@@ -721,19 +735,24 @@ function setGridRows(rows: StoreRow[]): void {
   const api = gridApi as GridApi<StoreRow> & {
     setRowData?: (rowData: StoreRow[]) => void;
     setGridOption?: (key: string, value: unknown) => void;
+    sizeColumnsToFit?: () => void;
   };
 
   if (typeof api.setGridOption === "function") {
     api.setGridOption("rowData", rows);
-    return;
-  }
-
-  if (typeof api.setRowData === "function") {
+  } else if (typeof api.setRowData === "function") {
     api.setRowData(rows);
-    return;
+  } else {
+    throw new Error("No supported AG Grid row update method found.");
   }
 
-  throw new Error("No supported AG Grid row update method found.");
+  requestAnimationFrame(() => {
+    try {
+      api.sizeColumnsToFit?.();
+    } catch (error) {
+      console.warn("sizeColumnsToFit failed:", error);
+    }
+  });
 }
 
 function setInputValue(id: string, value: string): void {
@@ -876,20 +895,21 @@ async function fetchStores(): Promise<void> {
       },
     });
 
-    const rawText = await response.text();
-    console.log("Response status:", response.status);
-    console.log("Response body:", rawText);
-
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${rawText}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const parsed = JSON.parse(rawText);
+    const parsed = (await response.json()) as unknown;
+
     if (!Array.isArray(parsed)) {
       throw new Error("API response was not an array.");
     }
 
     const data = parsed.map((row) => normalizeStoreRow(row as StoreRow));
+
+    console.log("Store rows loaded:", data.length, data);
+
     setGridRows(data);
     setStatus(`${data.length} store(s) found.`);
   } catch (error) {
@@ -1089,11 +1109,12 @@ attachAutoSearch("phone_number");
 attachAutoSearch("country", "change");
 attachAutoSearch("quest_filter", "change");
 
-updateMusicButton();
-updateVolumeLabel(bgMusic.volume);
-
 document.addEventListener("DOMContentLoaded", () => {
-  window.setTimeout(() => {
+  ensureGridIsVisible();
+  updateMusicButton();
+  updateVolumeLabel(bgMusic.volume);
+
+  requestAnimationFrame(() => {
     loadAllStores();
-  }, 250);
+  });
 });
