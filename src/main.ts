@@ -30,14 +30,14 @@ if (
 ) {
   if (window.location.protocol !== "https:") {
     window.location.replace(
-      `https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`
+      `https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`,
     );
   }
 }
 
 function ensureSecurityMetaTag(): void {
   const existing = document.querySelector(
-    'meta[http-equiv="Content-Security-Policy"]'
+    'meta[http-equiv="Content-Security-Policy"]',
   );
   if (existing) return;
 
@@ -522,7 +522,10 @@ function getHoursValue(value?: string): string {
 }
 
 function getInputValue(id: string): string {
-  const element = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+  const element = document.getElementById(id) as
+    | HTMLInputElement
+    | HTMLSelectElement
+    | null;
   return element?.value ?? "";
 }
 
@@ -574,12 +577,24 @@ function openStoreDetailModal(store: StoreRow): void {
   const modal = document.getElementById("storeDetailModal");
   if (!modal) return;
 
-  const addressLink = document.getElementById("detail_address_link") as HTMLAnchorElement | null;
-  const phoneLink = document.getElementById("detail_phone_link") as HTMLAnchorElement | null;
-  const websiteLink = document.getElementById("detail_website_link") as HTMLAnchorElement | null;
-  const directionsBtn = document.getElementById("detail_directions_btn") as HTMLButtonElement | null;
-  const copyBtn = document.getElementById("detail_copy_btn") as HTMLButtonElement | null;
-  const badgeImg = document.getElementById("detail_quest_badge") as HTMLImageElement | null;
+  const addressLink = document.getElementById(
+    "detail_address_link",
+  ) as HTMLAnchorElement | null;
+  const phoneLink = document.getElementById(
+    "detail_phone_link",
+  ) as HTMLAnchorElement | null;
+  const websiteLink = document.getElementById(
+    "detail_website_link",
+  ) as HTMLAnchorElement | null;
+  const directionsBtn = document.getElementById(
+    "detail_directions_btn",
+  ) as HTMLButtonElement | null;
+  const copyBtn = document.getElementById(
+    "detail_copy_btn",
+  ) as HTMLButtonElement | null;
+  const badgeImg = document.getElementById(
+    "detail_quest_badge",
+  ) as HTMLImageElement | null;
 
   const storeNameEl = document.getElementById("detail_store_name");
 
@@ -593,12 +608,16 @@ function openStoreDetailModal(store: StoreRow): void {
 
   const fullAddress = formatAddress(normalizedStore);
   const mapsUrl = fullAddress ? buildGoogleMapsLink(normalizedStore) : "#";
-  const directionsUrl = fullAddress ? buildGoogleMapsDirectionsLink(normalizedStore) : "#";
+  const directionsUrl = fullAddress
+    ? buildGoogleMapsDirectionsLink(normalizedStore)
+    : "#";
   const badgeSrc = getQuestBadgeSrc(normalizedStore);
 
   const websiteUrl = buildWebsiteUrl(normalizedStore.website);
   const phoneNumber = normalizedStore.phone_number?.trim() ?? "";
-  const phoneHref = phoneNumber ? `tel:${phoneNumber.replace(/[^\d+]/g, "")}` : "#";
+  const phoneHref = phoneNumber
+    ? `tel:${phoneNumber.replace(/[^\d+]/g, "")}`
+    : "#";
   const websiteText = normalizedStore.website?.trim() ?? "";
 
   if (storeNameEl) storeNameEl.textContent = normalizedStore.store_name ?? "";
@@ -661,10 +680,13 @@ function openStoreDetailModal(store: StoreRow): void {
   if (sundayEl) sundayEl.textContent = getHoursValue(normalizedStore.sunday);
   if (mondayEl) mondayEl.textContent = getHoursValue(normalizedStore.monday);
   if (tuesdayEl) tuesdayEl.textContent = getHoursValue(normalizedStore.tuesday);
-  if (wednesdayEl) wednesdayEl.textContent = getHoursValue(normalizedStore.wednesday);
-  if (thursdayEl) thursdayEl.textContent = getHoursValue(normalizedStore.thursday);
+  if (wednesdayEl)
+    wednesdayEl.textContent = getHoursValue(normalizedStore.wednesday);
+  if (thursdayEl)
+    thursdayEl.textContent = getHoursValue(normalizedStore.thursday);
   if (fridayEl) fridayEl.textContent = getHoursValue(normalizedStore.friday);
-  if (saturdayEl) saturdayEl.textContent = getHoursValue(normalizedStore.saturday);
+  if (saturdayEl)
+    saturdayEl.textContent = getHoursValue(normalizedStore.saturday);
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -773,7 +795,10 @@ function setGridRows(rows: StoreRow[]): void {
 }
 
 function setInputValue(id: string, value: string): void {
-  const element = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+  const element = document.getElementById(id) as
+    | HTMLInputElement
+    | HTMLSelectElement
+    | null;
   if (element) element.value = value;
 }
 
@@ -803,7 +828,9 @@ function openAddStoreModal(): void {
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
 
-  const firstInput = document.getElementById("add_store_name") as HTMLInputElement | null;
+  const firstInput = document.getElementById(
+    "add_store_name",
+  ) as HTMLInputElement | null;
   firstInput?.focus();
 }
 
@@ -930,7 +957,7 @@ async function fetchStores(): Promise<void> {
     setStatus(
       error instanceof Error
         ? `Error loading store data: ${error.message}`
-        : "Error loading store data."
+        : "Error loading store data.",
     );
   }
 }
@@ -1013,20 +1040,22 @@ async function addStore(): Promise<void> {
     setStatus(
       result?.store_id !== undefined
         ? `Store added successfully. Store ID: ${result.store_id}`
-        : "Store added successfully."
+        : "Store added successfully.",
     );
     await fetchStores();
   } catch (err) {
     console.error("addStore failed:", err);
     setStatus(
-      err instanceof Error ? `Error adding store: ${err.message}` : "Error adding store."
+      err instanceof Error
+        ? `Error adding store: ${err.message}`
+        : "Error adding store.",
     );
   }
 }
 
 function attachAutoSearch(
   id: string,
-  eventName: "input" | "change" = "input"
+  eventName: "input" | "change" = "input",
 ): void {
   document.getElementById(id)?.addEventListener(eventName, () => {
     void fetchStores();
@@ -1073,10 +1102,12 @@ document.getElementById("closeAddStoreBtn")?.addEventListener("click", () => {
   closeAddStoreModal();
 });
 
-document.getElementById("closeStoreDetailBtn")?.addEventListener("click", () => {
-  playClick();
-  closeStoreDetailModal();
-});
+document
+  .getElementById("closeStoreDetailBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    closeStoreDetailModal();
+  });
 
 document.getElementById("addStoreModal")?.addEventListener("click", (event) => {
   if (event.target === event.currentTarget) closeAddStoreModal();
