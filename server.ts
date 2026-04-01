@@ -13,7 +13,7 @@ const DB_NAME = process.env.MONGO_DB_NAME || "backend";
 const COLLECTION_NAME =
   process.env.COLLECTION_NAME ||
   process.env.MONGO_COLLECTION_NAME ||
-  "stores";
+  "store_info";
 
 if (!MONGO_URI) {
   throw new Error("Missing MONGO_URI in environment variables.");
