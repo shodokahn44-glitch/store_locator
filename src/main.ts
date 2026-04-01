@@ -434,15 +434,15 @@ app.innerHTML = `
 
           <div class="store-detail-section">
             <h3>Store Hours</h3>
-            <div class="detail-hours-grid">
-              <div><strong>Sunday:</strong> <span id="detail_sunday_hours"></span></div>
-              <div><strong>Monday:</strong> <span id="detail_monday_hours"></span></div>
-              <div><strong>Tuesday:</strong> <span id="detail_tuesday_hours"></span></div>
-              <div><strong>Wednesday:</strong> <span id="detail_wednesday_hours"></span></div>
-              <div><strong>Thursday:</strong> <span id="detail_thursday_hours"></span></div>
-              <div><strong>Friday:</strong> <span id="detail_friday_hours"></span></div>
-              <div><strong>Saturday:</strong> <span id="detail_saturday_hours"></span></div>
-            </div>
+           <div class="detail-hours-grid">
+  <div class="hours-row"><span>Sunday:</span><span id="detail_sunday_hours"></span></div>
+  <div class="hours-row"><span>Monday:</span><span id="detail_monday_hours"></span></div>
+  <div class="hours-row"><span>Tuesday:</span><span id="detail_tuesday_hours"></span></div>
+  <div class="hours-row"><span>Wednesday:</span><span id="detail_wednesday_hours"></span></div>
+  <div class="hours-row"><span>Thursday:</span><span id="detail_thursday_hours"></span></div>
+  <div class="hours-row"><span>Friday:</span><span id="detail_friday_hours"></span></div>
+  <div class="hours-row"><span>Saturday:</span><span id="detail_saturday_hours"></span></div>
+</div>
           </div>
         </div>
       </div>

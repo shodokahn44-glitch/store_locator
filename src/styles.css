@@ -719,6 +719,40 @@ input[type="time"] {
     grid-template-columns: 1fr;
   }
 
+  .hours-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* HOURS ALIGNMENT FIX */
+.detail-hours-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Each row = perfectly aligned columns */
+.hours-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  font-size: 14px;
+}
+
+/* Day label */
+.hours-row span:first-child {
+  font-weight: 800;
+  color: #7fd6ff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Time */
+.hours-row span:last-child {
+  color: #e8f3ff;
+}
+
   .to-text {
     display: none;
   }
