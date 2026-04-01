@@ -266,7 +266,7 @@ app.innerHTML = `
           <div>
             <label for="quest_filter">Quest Participated In</label>
             <select id="quest_filter">
-              <option value="">All Quests</option>
+              <option value="">Select a Quest</option>
               <option value="nes_quest">Nintendo Quest</option>
               <option value="snes_quest">Super Nintendo Quest</option>
               <option value="n64_quest">Nintendo 64 Quest</option>
