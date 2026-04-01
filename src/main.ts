@@ -38,8 +38,6 @@ function ensureSecurityMetaTag(): void {
 
 ensureSecurityMetaTag();
 
-// Local dev uses localhost backend.
-// Production uses same-origin so the deployed frontend talks to its own Express API.
 const API_BASE =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
@@ -671,9 +669,20 @@ const gridOptions: GridOptions<StoreRow> = {
   },
 };
 
-const gridApi: GridApi<StoreRow> = createGrid(gridElement, gridOptions);
+let gridApi: GridApi<StoreRow> | null = null;
+const createdGridApi = createGrid(gridElement, gridOptions);
+
+if (!createdGridApi) {
+  throw new Error("AG Grid failed to initialize.");
+}
+
+gridApi = createdGridApi;
 
 function setGridRows(rows: StoreRow[]): void {
+  if (!gridApi) {
+    throw new Error("AG Grid API is not initialized.");
+  }
+
   const api = gridApi as GridApi<StoreRow> & {
     setRowData?: (rowData: StoreRow[]) => void;
     setGridOption?: (key: string, value: unknown) => void;
@@ -689,7 +698,7 @@ function setGridRows(rows: StoreRow[]): void {
     return;
   }
 
-  console.error("No supported AG Grid row update method found.");
+  throw new Error("No supported AG Grid row update method found.");
 }
 
 function setInputValue(id: string, value: string): void {
