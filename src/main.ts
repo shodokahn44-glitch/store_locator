@@ -129,6 +129,7 @@ interface StoreRow {
   thursday?: string;
   friday?: string;
   saturday?: string;
+  website?: string;
   nes_quest?: boolean;
   n64_quest?: boolean;
   snes_quest?: boolean;
@@ -384,6 +385,16 @@ app.innerHTML = `
                   <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
                 </div>
 
+                <div class="store-detail-row">
+                  <strong>Phone:</strong>
+                  <a id="detail_phone_link" href="#"></a>
+                </div>
+
+                <div class="store-detail-row">
+                  <strong>Website:</strong>
+                  <a id="detail_website_link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                </div>
+
                 <div class="detail-address-actions">
                   <button id="detail_directions_btn" class="retro-btn accent" type="button">Get Directions</button>
                   <button id="detail_copy_btn" class="retro-btn secondary" type="button">Copy Address</button>
@@ -438,6 +449,19 @@ function buildGoogleMapsDirectionsLink(store: StoreRow): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`;
 }
 
+function buildWebsiteUrl(website?: string): string {
+  if (!website) return "#";
+
+  const trimmed = website.trim();
+  if (!trimmed) return "#";
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
 function getHoursValue(value?: string): string {
   return value && value.trim() ? value : "Not Available";
 }
@@ -463,9 +487,9 @@ function getQuestBadgeSrc(store: StoreRow): string | null {
   const snes = store.snes_quest === true;
 
   if (nes && n64 && snes) return allQuestParticipant;
-  if (nes) return nesQuestParticipant;
-  if (n64) return n64QuestParticipant;
   if (snes) return snesQuestParticipant;
+  if (n64) return n64QuestParticipant;
+  if (nes) return nesQuestParticipant;
 
   return null;
 }
@@ -475,10 +499,12 @@ function getQuestBadgeAlt(store: StoreRow): string {
   const n64 = store.n64_quest === true;
   const snes = store.snes_quest === true;
 
-  if (nes && n64 && snes) return "Nintendo Quest, Super Nintendo Quest, and Nintendo 64 Quest Participant";
-  if (nes) return "Nintendo Quest Participant";
-  if (n64) return "Nintendo 64 Quest Participant";
+  if (nes && n64 && snes) {
+    return "Nintendo Quest, Super Nintendo Quest, and Nintendo 64 Quest Participant";
+  }
   if (snes) return "Super Nintendo Quest Participant";
+  if (n64) return "Nintendo 64 Quest Participant";
+  if (nes) return "Nintendo Quest Participant";
 
   return "Quest Participant";
 }
@@ -488,6 +514,8 @@ function openStoreDetailModal(store: StoreRow): void {
   if (!modal) return;
 
   const addressLink = document.getElementById("detail_address_link") as HTMLAnchorElement | null;
+  const phoneLink = document.getElementById("detail_phone_link") as HTMLAnchorElement | null;
+  const websiteLink = document.getElementById("detail_website_link") as HTMLAnchorElement | null;
   const directionsBtn = document.getElementById("detail_directions_btn") as HTMLButtonElement | null;
   const copyBtn = document.getElementById("detail_copy_btn") as HTMLButtonElement | null;
   const badgeImg = document.getElementById("detail_quest_badge") as HTMLImageElement | null;
@@ -507,12 +535,29 @@ function openStoreDetailModal(store: StoreRow): void {
   const directionsUrl = fullAddress ? buildGoogleMapsDirectionsLink(store) : "#";
   const badgeSrc = getQuestBadgeSrc(store);
 
+  const websiteUrl = buildWebsiteUrl(store.website);
+  const phoneNumber = store.phone_number?.trim() ?? "";
+  const phoneHref = phoneNumber ? `tel:${phoneNumber.replace(/[^\d+]/g, "")}` : "#";
+  const websiteText = store.website?.trim() ?? "";
+
   if (storeNameEl) storeNameEl.textContent = store.store_name ?? "";
 
   if (addressLink) {
     addressLink.textContent = fullAddress || "Address not available";
     addressLink.href = mapsUrl;
     addressLink.style.pointerEvents = fullAddress ? "auto" : "none";
+  }
+
+  if (phoneLink) {
+    phoneLink.textContent = phoneNumber || "Not Available";
+    phoneLink.href = phoneHref;
+    phoneLink.style.pointerEvents = phoneNumber ? "auto" : "none";
+  }
+
+  if (websiteLink) {
+    websiteLink.textContent = websiteText || "Not Available";
+    websiteLink.href = websiteUrl;
+    websiteLink.style.pointerEvents = websiteText ? "auto" : "none";
   }
 
   if (directionsBtn) {
@@ -552,13 +597,13 @@ function openStoreDetailModal(store: StoreRow): void {
     }
   }
 
-if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday);
-if (mondayEl) mondayEl.textContent = getHoursValue(store.monday);
-if (tuesdayEl) tuesdayEl.textContent = getHoursValue(store.tuesday);
-if (wednesdayEl) wednesdayEl.textContent = getHoursValue(store.wednesday);
-if (thursdayEl) thursdayEl.textContent = getHoursValue(store.thursday);
-if (fridayEl) fridayEl.textContent = getHoursValue(store.friday);
-if (saturdayEl) saturdayEl.textContent = getHoursValue(store.saturday);
+  if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday);
+  if (mondayEl) mondayEl.textContent = getHoursValue(store.monday);
+  if (tuesdayEl) tuesdayEl.textContent = getHoursValue(store.tuesday);
+  if (wednesdayEl) wednesdayEl.textContent = getHoursValue(store.wednesday);
+  if (thursdayEl) thursdayEl.textContent = getHoursValue(store.thursday);
+  if (fridayEl) fridayEl.textContent = getHoursValue(store.friday);
+  if (saturdayEl) saturdayEl.textContent = getHoursValue(store.saturday);
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -810,23 +855,23 @@ async function addStore(): Promise<void> {
     return;
   }
 
-const payload = {
-  store_name: values.store_name,
-  address: values.address,
-  address_2: values.address_2 || "",
-  city: values.city,
-  state: values.state,
-  zip: values.zip,
-  phone_number: values.phone_number,
-  country: values.country,
-  sunday: values.sunday_hours,
-  monday: values.monday_hours,
-  tuesday: values.tuesday_hours,
-  wednesday: values.wednesday_hours,
-  thursday: values.thursday_hours,
-  friday: values.friday_hours,
-  saturday: values.saturday_hours,
-};
+  const payload = {
+    store_name: values.store_name,
+    address: values.address,
+    address_2: values.address_2 || "",
+    city: values.city,
+    state: values.state,
+    zip: values.zip,
+    phone_number: values.phone_number,
+    country: values.country,
+    sunday: values.sunday_hours,
+    monday: values.monday_hours,
+    tuesday: values.tuesday_hours,
+    wednesday: values.wednesday_hours,
+    thursday: values.thursday_hours,
+    friday: values.friday_hours,
+    saturday: values.saturday_hours,
+  };
 
   try {
     setStatus("Saving store...");
