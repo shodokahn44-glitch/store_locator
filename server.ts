@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, Db, Collection, ObjectId } from "mongodb";
+import path from "path";
 
 dotenv.config();
 
@@ -17,6 +18,11 @@ if (!MONGO_URI) {
 
 app.use(cors());
 app.use(express.json());
+
+const __dirname = path.resolve();
+
+// Serve Vite build
+app.use(express.static(path.join(__dirname, "dist")));
 
 interface StoreDocument {
   _id?: ObjectId;
@@ -175,6 +181,10 @@ app.post("/api/stores", async (req: Request, res: Response) => {
           "Missing required fields: store_name, address, city, state, zip, phone_number, country",
       });
     }
+
+    app.get("*", (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
 
     const nextStoreId = await getNextStoreId();
 
