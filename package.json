@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"vite\" \"ts-node server.ts\"",
-    "build": "vite build && tsc -p tsconfig.server.json && node rename-server-extension.cjs",
+    "build": "vite build && tsc -p tsconfig.server.json && node -e \"const fs=require('fs'); if(fs.existsSync('build/server.cjs')) fs.unlinkSync('build/server.cjs'); fs.renameSync('build/server.js','build/server.cjs')\"",
     "start": "node build/server.cjs"
   },
   "dependencies": {
