@@ -19,10 +19,10 @@ if (!MONGO_URI) {
 app.use(cors());
 app.use(express.json());
 
-const __dirname = path.resolve();
+const appRoot = path.resolve();
 
 // Serve Vite build
-app.use(express.static(path.join(__dirname, "dist")));
+app.use(express.static(path.join(appRoot, "dist")));
 
 interface StoreDocument {
   _id?: ObjectId;
@@ -182,10 +182,6 @@ app.post("/api/stores", async (req: Request, res: Response) => {
       });
     }
 
-    app.get("*", (_req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
-});
-
     const nextStoreId = await getNextStoreId();
 
     const newStore: Omit<StoreDocument, "_id"> = {
@@ -222,6 +218,11 @@ app.post("/api/stores", async (req: Request, res: Response) => {
     console.error("Failed to add store:", error);
     return res.status(500).json({ error: "Failed to add store." });
   }
+});
+
+// SPA fallback route - must be last
+app.get("*", (_req: Request, res: Response) => {
+  res.sendFile(path.join(appRoot, "dist", "index.html"));
 });
 
 app.listen(PORT, async () => {

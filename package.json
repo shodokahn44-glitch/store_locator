@@ -2,11 +2,12 @@
   "name": "store-locator",
   "version": "1.0.0",
   "private": true,
+
   "scripts": {
     "dev": "concurrently \"vite\" \"ts-node server.ts\"",
-    "build": "vite build && tsc -p tsconfig.server.json",
-    "start": "node build/server.js"
-  },
+    "build": "vite build && tsc -p tsconfig.server.json && node rename-server-extension.cjs",
+    "start": "node build/server.cjs"
+},
   "dependencies": {
     "ag-grid-community": "^35.2.0",
     "cors": "^2.8.5",
