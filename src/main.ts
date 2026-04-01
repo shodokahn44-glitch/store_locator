@@ -2,6 +2,10 @@ import { ColDef, createGrid, GridApi, GridOptions } from "ag-grid-community";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
+import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
+
+// 🔥 REQUIRED FOR AG GRID v35+
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 const nesQuestParticipant = "/nesQuestParticipant.png";
 const n64QuestParticipant = "/n64QuestParticipant.png";
