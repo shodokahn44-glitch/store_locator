@@ -117,9 +117,10 @@ interface StoreRow {
   store_id?: number;
   address?: string;
   address_2?: string;
+  ["address 2"]?: string;
   city?: string;
   state?: string;
-  zip?: string;
+  zip?: string | number;
   phone_number?: string;
   country?: string;
   sunday?: string;
@@ -133,6 +134,8 @@ interface StoreRow {
   nes_quest?: boolean;
   n64_quest?: boolean;
   snes_quest?: boolean;
+  nintendo_quest?: boolean;
+  super_nintendo_quest?: boolean;
 }
 
 interface FormValues {
@@ -436,16 +439,35 @@ app.innerHTML = `
   </div>
 `;
 
+function getAddress2Value(store: StoreRow): string {
+  return String(store.address_2 ?? store["address 2"] ?? "").trim();
+}
+
+function normalizeBoolean(value: unknown): boolean {
+  return value === true;
+}
+
+function normalizeStoreRow(row: StoreRow): StoreRow {
+  return {
+    ...row,
+    address_2: String(row.address_2 ?? row["address 2"] ?? "").trim(),
+    zip: row.zip ?? "",
+    nes_quest: normalizeBoolean(row.nes_quest ?? row.nintendo_quest),
+    snes_quest: normalizeBoolean(row.snes_quest ?? row.super_nintendo_quest),
+    n64_quest: normalizeBoolean(row.n64_quest),
+  };
+}
+
 function formatAddress(store: StoreRow): string {
   return [
     store.address,
-    store.address_2,
+    getAddress2Value(store),
     store.city,
     store.state,
     store.zip,
     store.country,
   ]
-    .filter(Boolean)
+    .filter((part) => String(part ?? "").trim() !== "")
     .map((part) => String(part).trim())
     .join(", ");
 }
@@ -493,9 +515,11 @@ function buildDayHours(openId: string, closeId: string): string {
 }
 
 function getQuestBadgeSrc(store: StoreRow): string | null {
-  const nes = store.nes_quest === true;
-  const n64 = store.n64_quest === true;
-  const snes = store.snes_quest === true;
+  const normalized = normalizeStoreRow(store);
+
+  const nes = normalized.nes_quest === true;
+  const n64 = normalized.n64_quest === true;
+  const snes = normalized.snes_quest === true;
 
   if (nes && n64 && snes) return allQuestParticipant;
   if (snes) return snesQuestParticipant;
@@ -506,9 +530,11 @@ function getQuestBadgeSrc(store: StoreRow): string | null {
 }
 
 function getQuestBadgeAlt(store: StoreRow): string {
-  const nes = store.nes_quest === true;
-  const n64 = store.n64_quest === true;
-  const snes = store.snes_quest === true;
+  const normalized = normalizeStoreRow(store);
+
+  const nes = normalized.nes_quest === true;
+  const n64 = normalized.n64_quest === true;
+  const snes = normalized.snes_quest === true;
 
   if (nes && n64 && snes) {
     return "Nintendo Quest, Super Nintendo Quest, and Nintendo 64 Quest Participant";
@@ -521,6 +547,8 @@ function getQuestBadgeAlt(store: StoreRow): string {
 }
 
 function openStoreDetailModal(store: StoreRow): void {
+  const normalizedStore = normalizeStoreRow(store);
+
   const modal = document.getElementById("storeDetailModal");
   if (!modal) return;
 
@@ -541,17 +569,17 @@ function openStoreDetailModal(store: StoreRow): void {
   const fridayEl = document.getElementById("detail_friday_hours");
   const saturdayEl = document.getElementById("detail_saturday_hours");
 
-  const fullAddress = formatAddress(store);
-  const mapsUrl = fullAddress ? buildGoogleMapsLink(store) : "#";
-  const directionsUrl = fullAddress ? buildGoogleMapsDirectionsLink(store) : "#";
-  const badgeSrc = getQuestBadgeSrc(store);
+  const fullAddress = formatAddress(normalizedStore);
+  const mapsUrl = fullAddress ? buildGoogleMapsLink(normalizedStore) : "#";
+  const directionsUrl = fullAddress ? buildGoogleMapsDirectionsLink(normalizedStore) : "#";
+  const badgeSrc = getQuestBadgeSrc(normalizedStore);
 
-  const websiteUrl = buildWebsiteUrl(store.website);
-  const phoneNumber = store.phone_number?.trim() ?? "";
+  const websiteUrl = buildWebsiteUrl(normalizedStore.website);
+  const phoneNumber = normalizedStore.phone_number?.trim() ?? "";
   const phoneHref = phoneNumber ? `tel:${phoneNumber.replace(/[^\d+]/g, "")}` : "#";
-  const websiteText = store.website?.trim() ?? "";
+  const websiteText = normalizedStore.website?.trim() ?? "";
 
-  if (storeNameEl) storeNameEl.textContent = store.store_name ?? "";
+  if (storeNameEl) storeNameEl.textContent = normalizedStore.store_name ?? "";
 
   if (addressLink) {
     addressLink.textContent = fullAddress || "Address not available";
@@ -575,7 +603,7 @@ function openStoreDetailModal(store: StoreRow): void {
     directionsBtn.disabled = !fullAddress;
     directionsBtn.onclick = () => {
       if (!fullAddress) return;
-      window.location.href = directionsUrl;
+      window.open(directionsUrl, "_blank", "noopener,noreferrer");
     };
   }
 
@@ -599,7 +627,7 @@ function openStoreDetailModal(store: StoreRow): void {
   if (badgeImg) {
     if (badgeSrc) {
       badgeImg.src = badgeSrc;
-      badgeImg.alt = getQuestBadgeAlt(store);
+      badgeImg.alt = getQuestBadgeAlt(normalizedStore);
       badgeImg.classList.remove("hidden");
     } else {
       badgeImg.removeAttribute("src");
@@ -608,13 +636,13 @@ function openStoreDetailModal(store: StoreRow): void {
     }
   }
 
-  if (sundayEl) sundayEl.textContent = getHoursValue(store.sunday);
-  if (mondayEl) mondayEl.textContent = getHoursValue(store.monday);
-  if (tuesdayEl) tuesdayEl.textContent = getHoursValue(store.tuesday);
-  if (wednesdayEl) wednesdayEl.textContent = getHoursValue(store.wednesday);
-  if (thursdayEl) thursdayEl.textContent = getHoursValue(store.thursday);
-  if (fridayEl) fridayEl.textContent = getHoursValue(store.friday);
-  if (saturdayEl) saturdayEl.textContent = getHoursValue(store.saturday);
+  if (sundayEl) sundayEl.textContent = getHoursValue(normalizedStore.sunday);
+  if (mondayEl) mondayEl.textContent = getHoursValue(normalizedStore.monday);
+  if (tuesdayEl) tuesdayEl.textContent = getHoursValue(normalizedStore.tuesday);
+  if (wednesdayEl) wednesdayEl.textContent = getHoursValue(normalizedStore.wednesday);
+  if (thursdayEl) thursdayEl.textContent = getHoursValue(normalizedStore.thursday);
+  if (fridayEl) fridayEl.textContent = getHoursValue(normalizedStore.friday);
+  if (saturdayEl) saturdayEl.textContent = getHoursValue(normalizedStore.saturday);
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -649,6 +677,13 @@ const columnDefs: ColDef<StoreRow>[] = [
     },
   },
   { headerName: "Address", field: "address", sortable: true, filter: true },
+  {
+    headerName: "Address 2",
+    field: "address_2",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => getAddress2Value(params.data ?? {})
+  },
   { headerName: "City", field: "city", sortable: true, filter: true },
   { headerName: "State", field: "state", sortable: true, filter: true },
   { headerName: "Zip", field: "zip", sortable: true, filter: true },
@@ -836,6 +871,9 @@ async function fetchStores(): Promise<void> {
     const response = await fetch(url, {
       method: "GET",
       credentials: "omit",
+      headers: {
+        Accept: "application/json",
+      },
     });
 
     const rawText = await response.text();
@@ -846,7 +884,12 @@ async function fetchStores(): Promise<void> {
       throw new Error(`HTTP ${response.status}: ${rawText}`);
     }
 
-    const data = JSON.parse(rawText) as StoreRow[];
+    const parsed = JSON.parse(rawText);
+    if (!Array.isArray(parsed)) {
+      throw new Error("API response was not an array.");
+    }
+
+    const data = parsed.map((row) => normalizeStoreRow(row as StoreRow));
     setGridRows(data);
     setStatus(`${data.length} store(s) found.`);
   } catch (error) {
@@ -870,7 +913,7 @@ function clearAddForm(): void {
 }
 
 function loadAllStores(): void {
-  clearForm();
+  SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
   void fetchStores();
 }
 
@@ -916,6 +959,7 @@ async function addStore(): Promise<void> {
       credentials: "omit",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify(payload),
     });
@@ -928,12 +972,16 @@ async function addStore(): Promise<void> {
       throw new Error(`HTTP ${res.status}: ${rawText}`);
     }
 
-    const result = JSON.parse(rawText);
+    const result = rawText ? JSON.parse(rawText) : {};
 
     clearAddForm();
     closeAddStoreModal();
     showToast("Added to the Quest 🚀");
-    setStatus(`Store added successfully. Store ID: ${result.store_id}`);
+    setStatus(
+      result?.store_id !== undefined
+        ? `Store added successfully. Store ID: ${result.store_id}`
+        : "Store added successfully."
+    );
     await fetchStores();
   } catch (err) {
     console.error("addStore failed:", err);
@@ -1044,6 +1092,8 @@ attachAutoSearch("quest_filter", "change");
 updateMusicButton();
 updateVolumeLabel(bgMusic.volume);
 
-setTimeout(() => {
-  loadAllStores();
-}, 750);
+document.addEventListener("DOMContentLoaded", () => {
+  window.setTimeout(() => {
+    loadAllStores();
+  }, 250);
+});
