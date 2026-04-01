@@ -4,22 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"vite\" \"ts-node server.ts\"",
-    "build": "vite build && tsc",
+    "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node build/server.js"
   },
   "dependencies": {
-    "ag-grid-community": "^32.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.0",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mongodb": "^6.3.0"
+    "mongodb": "^6.8.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.11.0",
-    "concurrently": "^8.2.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.7.4",
+    "concurrently": "^9.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.0"
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
   }
 }
