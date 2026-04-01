@@ -144,6 +144,7 @@ interface FormValues {
   zip: string;
   phone_number: string;
   country: string;
+  quest_filter: string;
 }
 
 interface NewStoreFormValues {
@@ -245,6 +246,16 @@ app.innerHTML = `
               <option value="">All Countries</option>
               <option value="USA">USA</option>
               <option value="Canada">Canada</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="quest_filter">Quest Participated In</label>
+            <select id="quest_filter">
+              <option value="">All Quests</option>
+              <option value="nes_quest">Nintendo Quest</option>
+              <option value="snes_quest">Super Nintendo Quest</option>
+              <option value="n64_quest">Nintendo 64 Quest</option>
             </select>
           </div>
         </div>
@@ -732,6 +743,7 @@ function getFormValues(): FormValues {
     zip: getInputValue("zip"),
     phone_number: getInputValue("phone_number"),
     country: getInputValue("country"),
+    quest_filter: getInputValue("quest_filter"),
   };
 }
 
@@ -764,6 +776,7 @@ const SEARCH_FIELD_IDS = [
   "zip",
   "phone_number",
   "country",
+  "quest_filter",
 ];
 
 const ADD_FIELD_IDS = [
@@ -1000,6 +1013,7 @@ attachAutoSearch("state");
 attachAutoSearch("zip");
 attachAutoSearch("phone_number");
 attachAutoSearch("country", "change");
+attachAutoSearch("quest_filter", "change");
 
 updateMusicButton();
 updateVolumeLabel(bgMusic.volume);
