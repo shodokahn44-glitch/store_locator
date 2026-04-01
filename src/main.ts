@@ -443,6 +443,8 @@ function ensureGridIsVisible(): void {
   const gridEl = document.getElementById("storeGrid") as HTMLDivElement | null;
   if (!gridEl) return;
 
+  gridEl.style.display = "block";
+  gridEl.style.visibility = "visible";
   gridEl.style.width = "100%";
   gridEl.style.height = "560px";
   gridEl.style.minHeight = "560px";
@@ -691,7 +693,7 @@ const columnDefs: ColDef<StoreRow>[] = [
     field: "address_2",
     sortable: true,
     filter: true,
-    valueGetter: (params) => getAddress2Value(params.data ?? {})
+    valueGetter: (params) => getAddress2Value(params.data ?? {}),
   },
   { headerName: "City", field: "city", sortable: true, filter: true },
   { headerName: "State", field: "state", sortable: true, filter: true },
@@ -736,7 +738,11 @@ function setGridRows(rows: StoreRow[]): void {
     setRowData?: (rowData: StoreRow[]) => void;
     setGridOption?: (key: string, value: unknown) => void;
     sizeColumnsToFit?: () => void;
+    refreshCells?: () => void;
+    redrawRows?: () => void;
   };
+
+  console.log("Setting grid rows:", rows.length);
 
   if (typeof api.setGridOption === "function") {
     api.setGridOption("rowData", rows);
@@ -748,9 +754,11 @@ function setGridRows(rows: StoreRow[]): void {
 
   requestAnimationFrame(() => {
     try {
+      api.redrawRows?.();
+      api.refreshCells?.();
       api.sizeColumnsToFit?.();
     } catch (error) {
-      console.warn("sizeColumnsToFit failed:", error);
+      console.warn("Grid refresh failed:", error);
     }
   });
 }
@@ -870,6 +878,7 @@ const ADD_FIELD_IDS = [
 ];
 
 async function fetchStores(): Promise<void> {
+  console.log("fetchStores entered");
   setStatus("Loading...");
 
   try {
@@ -934,7 +943,9 @@ function clearAddForm(): void {
 
 function loadAllStores(): void {
   SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
-  void fetchStores();
+  requestAnimationFrame(() => {
+    void fetchStores();
+  });
 }
 
 async function addStore(): Promise<void> {
@@ -1011,7 +1022,10 @@ async function addStore(): Promise<void> {
   }
 }
 
-function attachAutoSearch(id: string, eventName: "input" | "change" = "input"): void {
+function attachAutoSearch(
+  id: string,
+  eventName: "input" | "change" = "input"
+): void {
   document.getElementById(id)?.addEventListener(eventName, () => {
     void fetchStores();
   });
@@ -1066,9 +1080,11 @@ document.getElementById("addStoreModal")?.addEventListener("click", (event) => {
   if (event.target === event.currentTarget) closeAddStoreModal();
 });
 
-document.getElementById("storeDetailModal")?.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) closeStoreDetailModal();
-});
+document
+  .getElementById("storeDetailModal")
+  ?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) closeStoreDetailModal();
+  });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
@@ -1082,7 +1098,9 @@ document.getElementById("musicToggleBtn")?.addEventListener("click", () => {
   toggleMusic();
 });
 
-(document.getElementById("volumeSlider") as HTMLInputElement | null)?.addEventListener("input", (e) => {
+(
+  document.getElementById("volumeSlider") as HTMLInputElement | null
+)?.addEventListener("input", (e) => {
   const target = e.target as HTMLInputElement;
   const volume = Number(target.value) / 100;
 
@@ -1109,12 +1127,21 @@ attachAutoSearch("phone_number");
 attachAutoSearch("country", "change");
 attachAutoSearch("quest_filter", "change");
 
-document.addEventListener("DOMContentLoaded", () => {
+function bootstrap(): void {
+  console.log("BOOTSTRAP RUNNING");
+
   ensureGridIsVisible();
   updateMusicButton();
   updateVolumeLabel(bgMusic.volume);
 
   requestAnimationFrame(() => {
-    loadAllStores();
+    console.log("CALLING fetchStores()");
+    void fetchStores();
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrap);
+} else {
+  bootstrap();
+}
