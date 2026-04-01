@@ -1,10 +1,17 @@
-import { ColDef, createGrid, GridApi, GridOptions } from "ag-grid-community";
+import {
+  ModuleRegistry,
+  AllCommunityModule,
+  ColDef,
+  createGrid,
+  GridApi,
+  GridOptions,
+} from "ag-grid-community";
+
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "./styles.css";
-import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 
-// 🔥 REQUIRED FOR AG GRID v35+
+// REQUIRED FOR AG GRID v35+
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const nesQuestParticipant = "/nesQuestParticipant.png";
@@ -746,8 +753,6 @@ function setGridRows(rows: StoreRow[]): void {
     redrawRows?: () => void;
   };
 
-  console.log("Setting grid rows:", rows.length);
-
   if (typeof api.setGridOption === "function") {
     api.setGridOption("rowData", rows);
   } else if (typeof api.setRowData === "function") {
@@ -882,7 +887,6 @@ const ADD_FIELD_IDS = [
 ];
 
 async function fetchStores(): Promise<void> {
-  console.log("fetchStores entered");
   setStatus("Loading...");
 
   try {
@@ -897,8 +901,6 @@ async function fetchStores(): Promise<void> {
     const url = queryString
       ? `${API_BASE}/api/stores?${queryString}`
       : `${API_BASE}/api/stores`;
-
-    console.log("Fetching stores from:", url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -920,8 +922,6 @@ async function fetchStores(): Promise<void> {
     }
 
     const data = parsed.map((row) => normalizeStoreRow(row as StoreRow));
-
-    console.log("Store rows loaded:", data.length, data);
 
     setGridRows(data);
     setStatus(`${data.length} store(s) found.`);
@@ -1000,8 +1000,6 @@ async function addStore(): Promise<void> {
     });
 
     const rawText = await res.text();
-    console.log("Add store status:", res.status);
-    console.log("Add store body:", rawText);
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${rawText}`);
@@ -1132,14 +1130,11 @@ attachAutoSearch("country", "change");
 attachAutoSearch("quest_filter", "change");
 
 function bootstrap(): void {
-  console.log("BOOTSTRAP RUNNING");
-
   ensureGridIsVisible();
   updateMusicButton();
   updateVolumeLabel(bgMusic.volume);
 
   requestAnimationFrame(() => {
-    console.log("CALLING fetchStores()");
     void fetchStores();
   });
 }

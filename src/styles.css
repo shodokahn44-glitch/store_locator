@@ -500,6 +500,101 @@ input[type="time"] {
   display: block;
 }
 
+/* Retro AG Grid theme */
+#storeGrid.ag-theme-alpine,
+.ag-theme-alpine.retro-grid {
+  --ag-background-color: #07142f;
+  --ag-foreground-color: #e8f3ff;
+  --ag-header-background-color: #1a2d63;
+  --ag-header-foreground-color: #ffffff;
+  --ag-odd-row-background-color: #13254f;
+  --ag-row-hover-color: rgba(86, 170, 255, 0.15);
+  --ag-selected-row-background-color: rgba(120, 90, 255, 0.24);
+  --ag-border-color: rgba(97, 148, 255, 0.24);
+  --ag-secondary-border-color: rgba(97, 148, 255, 0.18);
+  --ag-input-border-color: rgba(97, 148, 255, 0.35);
+  --ag-control-panel-background-color: #0b1b3f;
+  --ag-subheader-background-color: #102149;
+  --ag-tooltip-background-color: #0b1b3f;
+  --ag-font-size: 15px;
+  --ag-font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+  background: linear-gradient(180deg, #091733 0%, #07142f 100%);
+  border: 1px solid rgba(97, 148, 255, 0.24);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+/* Header */
+#storeGrid .ag-header {
+  border-bottom: 1px solid rgba(97, 148, 255, 0.28);
+}
+
+#storeGrid .ag-header-cell {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Zebra rows */
+#storeGrid .ag-row {
+  color: #e8f3ff;
+  border-bottom: 1px solid rgba(97, 148, 255, 0.14);
+}
+
+#storeGrid .ag-row-even {
+  background: #091733;
+}
+
+#storeGrid .ag-row-odd {
+  background: #13254f;
+}
+
+/* Cells */
+#storeGrid .ag-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* Hover */
+#storeGrid .ag-row:hover .ag-cell {
+  background: rgba(86, 170, 255, 0.12);
+}
+
+/* Footer / pagination */
+#storeGrid .ag-paging-panel {
+  background: #0f2149;
+  color: #e8f3ff;
+  border-top: 1px solid rgba(97, 148, 255, 0.22);
+}
+
+/* Menus / selects / filters */
+#storeGrid .ag-picker-field-wrapper,
+#storeGrid .ag-select-list,
+#storeGrid .ag-menu,
+#storeGrid .ag-filter {
+  background: #102149;
+  color: #e8f3ff;
+  border-color: rgba(97, 148, 255, 0.28);
+}
+
+/* Icons */
+#storeGrid .ag-icon {
+  color: #c7dcff;
+}
+
+/* Store links */
+#storeGrid .store-link {
+  color: #78c7ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+#storeGrid .store-link:hover {
+  color: #a6e0ff;
+  text-decoration: underline;
+}
+
 @media (max-width: 1100px) {
   .top-row {
     grid-template-columns: 1fr;
