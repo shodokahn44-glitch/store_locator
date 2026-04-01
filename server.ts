@@ -20,8 +20,6 @@ app.use(cors());
 app.use(express.json());
 
 const appRoot = path.resolve();
-
-// Serve Vite build
 app.use(express.static(path.join(appRoot, "dist")));
 
 interface StoreDocument {
@@ -220,7 +218,7 @@ app.post("/api/stores", async (req: Request, res: Response) => {
   }
 });
 
-// SPA fallback route - must be last
+// SPA fallback route - keep last
 app.get("*", (_req: Request, res: Response) => {
   res.sendFile(path.join(appRoot, "dist", "index.html"));
 });
