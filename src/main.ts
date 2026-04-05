@@ -292,7 +292,7 @@ app.innerHTML = `
 
         <h2 id="searchPanelTitle">Search Stores</h2>
 
-        <div id="storeSearchSection" class="search-section">
+        <div id="storeSearchSection" class="search-section" style="display:block;">
           <div class="search-grid">
             <div>
               <label for="store_name">Store Name</label>
@@ -359,7 +359,7 @@ app.innerHTML = `
           </div>
         </div>
 
-        <div id="mediaSearchSection" class="search-section hidden">
+        <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
           <div class="search-grid">
             <div>
               <label for="media_title">Title</label>
@@ -411,7 +411,7 @@ app.innerHTML = `
           </div>
         </div>
 
-        <div id="crewSearchSection" class="search-section hidden">
+        <div id="crewSearchSection" class="search-section hidden" style="display:none;">
           <div class="search-grid">
             <div>
               <label for="crew_name">Name</label>
@@ -1407,20 +1407,38 @@ const ADD_FIELD_IDS = [
   "add_sat_close",
 ];
 
+function forceHideSection(section: HTMLElement | null): void {
+  if (!section) return;
+  section.classList.add("hidden");
+  section.style.display = "none";
+}
+
+function forceShowSection(section: HTMLElement | null): void {
+  if (!section) return;
+  section.classList.remove("hidden");
+  section.style.display = "block";
+}
+
 function showSearchSection(mode: SearchMode): void {
   currentMode = mode;
 
-  const storeSection = document.getElementById("storeSearchSection");
-  const mediaSection = document.getElementById("mediaSearchSection");
-  const crewSection = document.getElementById("crewSearchSection");
+  const storeSection = document.getElementById(
+    "storeSearchSection",
+  ) as HTMLElement | null;
+  const mediaSection = document.getElementById(
+    "mediaSearchSection",
+  ) as HTMLElement | null;
+  const crewSection = document.getElementById(
+    "crewSearchSection",
+  ) as HTMLElement | null;
   const title = document.getElementById("searchPanelTitle");
   const openModalBtn = document.getElementById(
     "openModalBtn",
   ) as HTMLButtonElement | null;
 
-  storeSection?.classList.add("hidden");
-  mediaSection?.classList.add("hidden");
-  crewSection?.classList.add("hidden");
+  forceHideSection(storeSection);
+  forceHideSection(mediaSection);
+  forceHideSection(crewSection);
 
   document.getElementById("modeStoresBtn")?.classList.remove("accent");
   document.getElementById("modeMediaBtn")?.classList.remove("accent");
@@ -1431,8 +1449,8 @@ function showSearchSection(mode: SearchMode): void {
   document.getElementById("modeCrewBtn")?.classList.add("secondary");
 
   if (mode === "stores") {
-    storeSection?.classList.remove("hidden");
-    title!.textContent = "Search Stores";
+    forceShowSection(storeSection);
+    if (title) title.textContent = "Search Stores";
     document.getElementById("modeStoresBtn")?.classList.add("accent");
     document.getElementById("modeStoresBtn")?.classList.remove("secondary");
     setGridColumns(storeColumnDefs);
@@ -1440,8 +1458,8 @@ function showSearchSection(mode: SearchMode): void {
   }
 
   if (mode === "media") {
-    mediaSection?.classList.remove("hidden");
-    title!.textContent = "Search Media";
+    forceShowSection(mediaSection);
+    if (title) title.textContent = "Search Media";
     document.getElementById("modeMediaBtn")?.classList.add("accent");
     document.getElementById("modeMediaBtn")?.classList.remove("secondary");
     setGridColumns(mediaColumnDefs);
@@ -1449,8 +1467,8 @@ function showSearchSection(mode: SearchMode): void {
   }
 
   if (mode === "crew") {
-    crewSection?.classList.remove("hidden");
-    title!.textContent = "Search Crew";
+    forceShowSection(crewSection);
+    if (title) title.textContent = "Search Crew";
     document.getElementById("modeCrewBtn")?.classList.add("accent");
     document.getElementById("modeCrewBtn")?.classList.remove("secondary");
     setGridColumns(crewColumnDefs);

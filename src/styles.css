@@ -767,4 +767,12 @@ input[type="time"] {
   .to-text {
     display: none;
   }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .search-section {
+    width: 100%;
+  }
 }
