@@ -123,6 +123,8 @@ function updateVolumeLabel(value: number): void {
   label.textContent = `${Math.round(value * 100)}%`;
 }
 
+type SearchMode = "stores" | "media" | "crew";
+
 interface StoreRow {
   store_name?: string;
   store_id?: number;
@@ -149,7 +151,48 @@ interface StoreRow {
   super_nintendo_quest?: boolean;
 }
 
-interface FormValues {
+interface MediaRow {
+  title?: string;
+  media_title?: string;
+  type?: string;
+  media_type?: string;
+  format?: string;
+  genre?: string;
+  platform?: string;
+  year?: string | number;
+  release_year?: string | number;
+  company?: string;
+  studio?: string;
+  publisher?: string;
+  location?: string;
+  notes?: string;
+  website?: string;
+  image?: string;
+  [key: string]: unknown;
+}
+
+interface CrewRow {
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  title?: string;
+  department?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  company?: string;
+  project?: string;
+  notes?: string;
+  website?: string;
+  [key: string]: unknown;
+}
+
+type GridRow = StoreRow | MediaRow | CrewRow;
+
+interface StoreFormValues {
   store_name: string;
   address: string;
   address_2: string;
@@ -159,6 +202,30 @@ interface FormValues {
   phone_number: string;
   country: string;
   quest_filter: string;
+}
+
+interface MediaFormValues {
+  title: string;
+  media_type: string;
+  format: string;
+  genre: string;
+  platform: string;
+  year: string;
+  company: string;
+  location: string;
+}
+
+interface CrewFormValues {
+  name: string;
+  role: string;
+  department: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  country: string;
+  company: string;
+  project: string;
 }
 
 interface NewStoreFormValues {
@@ -191,7 +258,7 @@ app.innerHTML = `
       <div class="hero-logo-wrap">
         <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo" />
       </div>
-      <p class="hero-tagline">Search stores, add new locations, and keep the catalog synced.</p>
+      <p class="hero-tagline">Search stores, media, crew, add new locations, and keep the catalog synced.</p>
     </header>
 
     <section class="top-row">
@@ -217,69 +284,193 @@ app.innerHTML = `
       </div>
 
       <div class="panel retro-panel search-panel">
-        <h2>Search Stores</h2>
+        <div class="mode-switcher">
+          <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
+          <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
+          <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
+        </div>
 
-        <div class="search-grid">
-          <div>
-            <label for="store_name">Store Name</label>
-            <input id="store_name" type="text" />
+        <h2 id="searchPanelTitle">Search Stores</h2>
+
+        <div id="storeSearchSection" class="search-section">
+          <div class="search-grid">
+            <div>
+              <label for="store_name">Store Name</label>
+              <input id="store_name" type="text" />
+            </div>
+
+            <div>
+              <label for="address">Address</label>
+              <input id="address" type="text" />
+            </div>
+
+            <div>
+              <label for="address_2">Address 2</label>
+              <input id="address_2" type="text" />
+            </div>
+
+            <div>
+              <label for="city">City</label>
+              <input id="city" type="text" />
+            </div>
+
+            <div>
+              <label for="state">State / Province</label>
+              <input id="state" type="text" />
+            </div>
+
+            <div>
+              <label for="zip">Zip / Postal Code</label>
+              <input id="zip" type="text" />
+            </div>
+
+            <div>
+              <label for="phone_number">Phone Number</label>
+              <input id="phone_number" type="text" />
+            </div>
+
+            <div>
+              <label for="country">Country</label>
+              <select id="country">
+                <option value="">All Countries</option>
+                <option value="USA">USA</option>
+                <option value="Canada">Canada</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="quest_filter">Quest Participated In</label>
+              <select id="quest_filter">
+                <option value="">Select a Quest</option>
+                <option value="nes_quest">Nintendo Quest</option>
+                <option value="snes_quest">Super Nintendo Quest</option>
+                <option value="n64_quest">Nintendo 64 Quest</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label for="address">Address</label>
-            <input id="address" type="text" />
-          </div>
-
-          <div>
-            <label for="address_2">Address 2</label>
-            <input id="address_2" type="text" />
-          </div>
-
-          <div>
-            <label for="city">City</label>
-            <input id="city" type="text" />
-          </div>
-
-          <div>
-            <label for="state">State / Province</label>
-            <input id="state" type="text" />
-          </div>
-
-          <div>
-            <label for="zip">Zip / Postal Code</label>
-            <input id="zip" type="text" />
-          </div>
-
-          <div>
-            <label for="phone_number">Phone Number</label>
-            <input id="phone_number" type="text" />
-          </div>
-
-          <div>
-            <label for="country">Country</label>
-            <select id="country">
-              <option value="">All Countries</option>
-              <option value="USA">USA</option>
-              <option value="Canada">Canada</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="quest_filter">Quest Participated In</label>
-            <select id="quest_filter">
-              <option value="">Select a Quest</option>
-              <option value="nes_quest">Nintendo Quest</option>
-              <option value="snes_quest">Super Nintendo Quest</option>
-              <option value="n64_quest">Nintendo 64 Quest</option>
-            </select>
+          <div class="button-row">
+            <button id="searchBtn" class="retro-btn" type="button">Search</button>
+            <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
+            <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
+            <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+            <button id="goToMediaFromStoreBtn" class="retro-btn secondary" type="button">Go to Media Search</button>
+            <button id="goToCrewFromStoreBtn" class="retro-btn secondary" type="button">Go to Crew Search</button>
           </div>
         </div>
 
-        <div class="button-row">
-          <button id="searchBtn" class="retro-btn" type="button">Search</button>
-          <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
-          <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
-          <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+        <div id="mediaSearchSection" class="search-section hidden">
+          <div class="search-grid">
+            <div>
+              <label for="media_title">Title</label>
+              <input id="media_title" type="text" />
+            </div>
+
+            <div>
+              <label for="media_type">Media Type</label>
+              <input id="media_type" type="text" />
+            </div>
+
+            <div>
+              <label for="media_format">Format</label>
+              <input id="media_format" type="text" />
+            </div>
+
+            <div>
+              <label for="media_genre">Genre</label>
+              <input id="media_genre" type="text" />
+            </div>
+
+            <div>
+              <label for="media_platform">Platform</label>
+              <input id="media_platform" type="text" />
+            </div>
+
+            <div>
+              <label for="media_year">Year</label>
+              <input id="media_year" type="text" />
+            </div>
+
+            <div>
+              <label for="media_company">Company / Studio / Publisher</label>
+              <input id="media_company" type="text" />
+            </div>
+
+            <div>
+              <label for="media_location">Location</label>
+              <input id="media_location" type="text" />
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="mediaSearchBtn" class="retro-btn" type="button">Search Media</button>
+            <button id="mediaClearBtn" class="retro-btn secondary" type="button">Clear</button>
+            <button id="mediaLoadAllBtn" class="retro-btn accent" type="button">Load All Media</button>
+            <button id="backToStoresFromMediaBtn" class="retro-btn secondary" type="button">Back to Store Info</button>
+            <button id="goToCrewFromMediaBtn" class="retro-btn secondary" type="button">Go to Crew Search</button>
+          </div>
+        </div>
+
+        <div id="crewSearchSection" class="search-section hidden">
+          <div class="search-grid">
+            <div>
+              <label for="crew_name">Name</label>
+              <input id="crew_name" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_role">Role / Title</label>
+              <input id="crew_role" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_department">Department</label>
+              <input id="crew_department" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_email">Email</label>
+              <input id="crew_email" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_phone">Phone</label>
+              <input id="crew_phone" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_city">City</label>
+              <input id="crew_city" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_state">State / Province</label>
+              <input id="crew_state" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_country">Country</label>
+              <input id="crew_country" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_company">Company</label>
+              <input id="crew_company" type="text" />
+            </div>
+
+            <div>
+              <label for="crew_project">Project</label>
+              <input id="crew_project" type="text" />
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="crewSearchBtn" class="retro-btn" type="button">Search Crew</button>
+            <button id="crewClearBtn" class="retro-btn secondary" type="button">Clear</button>
+            <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
+            <button id="backToStoresFromCrewBtn" class="retro-btn secondary" type="button">Back to Store Info</button>
+            <button id="goToMediaFromCrewBtn" class="retro-btn secondary" type="button">Go to Media Search</button>
+          </div>
         </div>
       </div>
     </section>
@@ -446,21 +637,23 @@ app.innerHTML = `
 
           <div class="store-detail-section">
             <h3>Store Hours</h3>
-           <div class="detail-hours-grid">
-  <div class="hours-row"><span>Sunday:</span><span id="detail_sunday_hours"></span></div>
-  <div class="hours-row"><span>Monday:</span><span id="detail_monday_hours"></span></div>
-  <div class="hours-row"><span>Tuesday:</span><span id="detail_tuesday_hours"></span></div>
-  <div class="hours-row"><span>Wednesday:</span><span id="detail_wednesday_hours"></span></div>
-  <div class="hours-row"><span>Thursday:</span><span id="detail_thursday_hours"></span></div>
-  <div class="hours-row"><span>Friday:</span><span id="detail_friday_hours"></span></div>
-  <div class="hours-row"><span>Saturday:</span><span id="detail_saturday_hours"></span></div>
-</div>
+            <div class="detail-hours-grid">
+              <div class="hours-row"><span>Sunday:</span><span id="detail_sunday_hours"></span></div>
+              <div class="hours-row"><span>Monday:</span><span id="detail_monday_hours"></span></div>
+              <div class="hours-row"><span>Tuesday:</span><span id="detail_tuesday_hours"></span></div>
+              <div class="hours-row"><span>Wednesday:</span><span id="detail_wednesday_hours"></span></div>
+              <div class="hours-row"><span>Thursday:</span><span id="detail_thursday_hours"></span></div>
+              <div class="hours-row"><span>Friday:</span><span id="detail_friday_hours"></span></div>
+              <div class="hours-row"><span>Saturday:</span><span id="detail_saturday_hours"></span></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 `;
+
+let currentMode: SearchMode = "stores";
 
 function ensureGridIsVisible(): void {
   const gridEl = document.getElementById("storeGrid") as HTMLDivElement | null;
@@ -489,6 +682,21 @@ function normalizeStoreRow(row: StoreRow): StoreRow {
     nes_quest: normalizeBoolean(row.nes_quest ?? row.nintendo_quest),
     snes_quest: normalizeBoolean(row.snes_quest ?? row.super_nintendo_quest),
     n64_quest: normalizeBoolean(row.n64_quest),
+  };
+}
+
+function normalizeMediaRow(row: MediaRow): MediaRow {
+  return { ...row };
+}
+
+function normalizeCrewRow(row: CrewRow): CrewRow {
+  const first = String(row.first_name ?? "").trim();
+  const last = String(row.last_name ?? "").trim();
+  const name = String(row.name ?? "").trim();
+
+  return {
+    ...row,
+    name: name || [first, last].filter(Boolean).join(" "),
   };
 }
 
@@ -539,6 +747,14 @@ function getInputValue(id: string): string {
     | HTMLSelectElement
     | null;
   return element?.value ?? "";
+}
+
+function setInputValue(id: string, value: string): void {
+  const element = document.getElementById(id) as
+    | HTMLInputElement
+    | HTMLSelectElement
+    | null;
+  if (element) element.value = value;
 }
 
 function buildDayHours(openId: string, closeId: string): string {
@@ -692,13 +908,16 @@ function openStoreDetailModal(store: StoreRow): void {
   if (sundayEl) sundayEl.textContent = getHoursValue(normalizedStore.sunday);
   if (mondayEl) mondayEl.textContent = getHoursValue(normalizedStore.monday);
   if (tuesdayEl) tuesdayEl.textContent = getHoursValue(normalizedStore.tuesday);
-  if (wednesdayEl)
+  if (wednesdayEl) {
     wednesdayEl.textContent = getHoursValue(normalizedStore.wednesday);
-  if (thursdayEl)
+  }
+  if (thursdayEl) {
     thursdayEl.textContent = getHoursValue(normalizedStore.thursday);
+  }
   if (fridayEl) fridayEl.textContent = getHoursValue(normalizedStore.friday);
-  if (saturdayEl)
+  if (saturdayEl) {
     saturdayEl.textContent = getHoursValue(normalizedStore.saturday);
+  }
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -712,21 +931,55 @@ function closeStoreDetailModal(): void {
   modal.setAttribute("aria-hidden", "true");
 }
 
-const columnDefs: ColDef<StoreRow>[] = [
+function createDefaultRenderer(field: string) {
+  return (params: { value?: unknown; data?: GridRow }) => {
+    const value =
+      params.value ??
+      (params.data && typeof params.data === "object"
+        ? (params.data as Record<string, unknown>)[field]
+        : "");
+
+    return String(value ?? "");
+  };
+}
+
+function createWebsiteRenderer(field: string) {
+  return (params: { value?: unknown; data?: GridRow }) => {
+    const raw =
+      params.value ??
+      (params.data && typeof params.data === "object"
+        ? (params.data as Record<string, unknown>)[field]
+        : "");
+
+    const text = String(raw ?? "").trim();
+    if (!text) return "";
+
+    const link = document.createElement("a");
+    link.href = buildWebsiteUrl(text);
+    link.textContent = text;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "store-link";
+    return link;
+  };
+}
+
+const storeColumnDefs: ColDef<GridRow>[] = [
   {
     headerName: "Store Name",
     field: "store_name",
     sortable: true,
     filter: true,
-    cellRenderer: (params: { value?: string; data?: StoreRow }) => {
+    cellRenderer: (params: { value?: string; data?: GridRow }) => {
+      const data = (params.data ?? {}) as StoreRow;
       const link = document.createElement("a");
       link.href = "#";
-      link.textContent = params.value ?? "";
+      link.textContent = params.value ?? data.store_name ?? "";
       link.className = "store-link";
 
       link.addEventListener("click", (event) => {
         event.preventDefault();
-        if (params.data) openStoreDetailModal(params.data);
+        openStoreDetailModal(data);
       });
 
       return link;
@@ -738,7 +991,7 @@ const columnDefs: ColDef<StoreRow>[] = [
     field: "address_2",
     sortable: true,
     filter: true,
-    valueGetter: (params) => getAddress2Value(params.data ?? {}),
+    valueGetter: (params) => getAddress2Value((params.data ?? {}) as StoreRow),
   },
   { headerName: "City", field: "city", sortable: true, filter: true },
   { headerName: "State", field: "state", sortable: true, filter: true },
@@ -747,11 +1000,173 @@ const columnDefs: ColDef<StoreRow>[] = [
   { headerName: "Country", field: "country", sortable: true, filter: true },
 ];
 
+const mediaColumnDefs: ColDef<GridRow>[] = [
+  {
+    headerName: "Title",
+    field: "title",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => {
+      const row = (params.data ?? {}) as MediaRow;
+      return row.title ?? row.media_title ?? "";
+    },
+  },
+  {
+    headerName: "Type",
+    field: "type",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => {
+      const row = (params.data ?? {}) as MediaRow;
+      return row.type ?? row.media_type ?? "";
+    },
+  },
+  {
+    headerName: "Format",
+    field: "format",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("format"),
+  },
+  {
+    headerName: "Genre",
+    field: "genre",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("genre"),
+  },
+  {
+    headerName: "Platform",
+    field: "platform",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("platform"),
+  },
+  {
+    headerName: "Year",
+    field: "year",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => {
+      const row = (params.data ?? {}) as MediaRow;
+      return row.year ?? row.release_year ?? "";
+    },
+  },
+  {
+    headerName: "Company",
+    field: "company",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => {
+      const row = (params.data ?? {}) as MediaRow;
+      return row.company ?? row.studio ?? row.publisher ?? "";
+    },
+  },
+  {
+    headerName: "Location",
+    field: "location",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("location"),
+  },
+  {
+    headerName: "Website",
+    field: "website",
+    sortable: true,
+    filter: true,
+    cellRenderer: createWebsiteRenderer("website"),
+  },
+];
+
+const crewColumnDefs: ColDef<GridRow>[] = [
+  {
+    headerName: "Name",
+    field: "name",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => {
+      const row = (params.data ?? {}) as CrewRow;
+      return (
+        row.name ??
+        [row.first_name, row.last_name]
+          .filter((v) => String(v ?? "").trim() !== "")
+          .join(" ")
+      );
+    },
+  },
+  {
+    headerName: "Role",
+    field: "role",
+    sortable: true,
+    filter: true,
+    valueGetter: (params) => {
+      const row = (params.data ?? {}) as CrewRow;
+      return row.role ?? row.title ?? "";
+    },
+  },
+  {
+    headerName: "Department",
+    field: "department",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("department"),
+  },
+  {
+    headerName: "Email",
+    field: "email",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("email"),
+  },
+  {
+    headerName: "Phone",
+    field: "phone",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("phone"),
+  },
+  {
+    headerName: "City",
+    field: "city",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("city"),
+  },
+  {
+    headerName: "State",
+    field: "state",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("state"),
+  },
+  {
+    headerName: "Country",
+    field: "country",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("country"),
+  },
+  {
+    headerName: "Company",
+    field: "company",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("company"),
+  },
+  {
+    headerName: "Project",
+    field: "project",
+    sortable: true,
+    filter: true,
+    cellRenderer: createDefaultRenderer("project"),
+  },
+];
+
 const gridElement = document.querySelector<HTMLDivElement>("#storeGrid");
 if (!gridElement) throw new Error("Grid element not found.");
 
-const gridOptions: GridOptions<StoreRow> = {
-  columnDefs,
+const gridOptions: GridOptions<GridRow> = {
+  columnDefs: storeColumnDefs,
   rowData: [],
   pagination: true,
   paginationPageSize: 25,
@@ -765,7 +1180,7 @@ const gridOptions: GridOptions<StoreRow> = {
   },
 };
 
-let gridApi: GridApi<StoreRow> | null = null;
+let gridApi: GridApi<GridRow> | null = null;
 const createdGridApi = createGrid(gridElement, gridOptions);
 
 if (!createdGridApi) {
@@ -774,13 +1189,13 @@ if (!createdGridApi) {
 
 gridApi = createdGridApi;
 
-function setGridRows(rows: StoreRow[]): void {
+function setGridRows(rows: GridRow[]): void {
   if (!gridApi) {
     throw new Error("AG Grid API is not initialized.");
   }
 
-  const api = gridApi as GridApi<StoreRow> & {
-    setRowData?: (rowData: StoreRow[]) => void;
+  const api = gridApi as GridApi<GridRow> & {
+    setRowData?: (rowData: GridRow[]) => void;
     setGridOption?: (key: string, value: unknown) => void;
     sizeColumnsToFit?: () => void;
     refreshCells?: () => void;
@@ -806,12 +1221,25 @@ function setGridRows(rows: StoreRow[]): void {
   });
 }
 
-function setInputValue(id: string, value: string): void {
-  const element = document.getElementById(id) as
-    | HTMLInputElement
-    | HTMLSelectElement
-    | null;
-  if (element) element.value = value;
+function setGridColumns(columnDefs: ColDef<GridRow>[]): void {
+  if (!gridApi) return;
+
+  const api = gridApi as GridApi<GridRow> & {
+    setGridOption?: (key: string, value: unknown) => void;
+    sizeColumnsToFit?: () => void;
+  };
+
+  if (typeof api.setGridOption === "function") {
+    api.setGridOption("columnDefs", columnDefs);
+  }
+
+  requestAnimationFrame(() => {
+    try {
+      api.sizeColumnsToFit?.();
+    } catch (error) {
+      console.warn("Grid column resize failed:", error);
+    }
+  });
 }
 
 function setStatus(message: string): void {
@@ -854,7 +1282,7 @@ function closeAddStoreModal(): void {
   modal.setAttribute("aria-hidden", "true");
 }
 
-function getFormValues(): FormValues {
+function getStoreFormValues(): StoreFormValues {
   return {
     store_name: getInputValue("store_name"),
     address: getInputValue("address"),
@@ -865,6 +1293,34 @@ function getFormValues(): FormValues {
     phone_number: getInputValue("phone_number"),
     country: getInputValue("country"),
     quest_filter: getInputValue("quest_filter"),
+  };
+}
+
+function getMediaFormValues(): MediaFormValues {
+  return {
+    title: getInputValue("media_title"),
+    media_type: getInputValue("media_type"),
+    format: getInputValue("media_format"),
+    genre: getInputValue("media_genre"),
+    platform: getInputValue("media_platform"),
+    year: getInputValue("media_year"),
+    company: getInputValue("media_company"),
+    location: getInputValue("media_location"),
+  };
+}
+
+function getCrewFormValues(): CrewFormValues {
+  return {
+    name: getInputValue("crew_name"),
+    role: getInputValue("crew_role"),
+    department: getInputValue("crew_department"),
+    email: getInputValue("crew_email"),
+    phone: getInputValue("crew_phone"),
+    city: getInputValue("crew_city"),
+    state: getInputValue("crew_state"),
+    country: getInputValue("crew_country"),
+    company: getInputValue("crew_company"),
+    project: getInputValue("crew_project"),
   };
 }
 
@@ -889,7 +1345,7 @@ function getNewStoreFormValues(): NewStoreFormValues {
   };
 }
 
-const SEARCH_FIELD_IDS = [
+const STORE_SEARCH_FIELD_IDS = [
   "store_name",
   "address",
   "address_2",
@@ -899,6 +1355,30 @@ const SEARCH_FIELD_IDS = [
   "phone_number",
   "country",
   "quest_filter",
+];
+
+const MEDIA_SEARCH_FIELD_IDS = [
+  "media_title",
+  "media_type",
+  "media_format",
+  "media_genre",
+  "media_platform",
+  "media_year",
+  "media_company",
+  "media_location",
+];
+
+const CREW_SEARCH_FIELD_IDS = [
+  "crew_name",
+  "crew_role",
+  "crew_department",
+  "crew_email",
+  "crew_phone",
+  "crew_city",
+  "crew_state",
+  "crew_country",
+  "crew_company",
+  "crew_project",
 ];
 
 const ADD_FIELD_IDS = [
@@ -927,12 +1407,66 @@ const ADD_FIELD_IDS = [
   "add_sat_close",
 ];
 
+function showSearchSection(mode: SearchMode): void {
+  currentMode = mode;
+
+  const storeSection = document.getElementById("storeSearchSection");
+  const mediaSection = document.getElementById("mediaSearchSection");
+  const crewSection = document.getElementById("crewSearchSection");
+  const title = document.getElementById("searchPanelTitle");
+  const openModalBtn = document.getElementById(
+    "openModalBtn",
+  ) as HTMLButtonElement | null;
+
+  storeSection?.classList.add("hidden");
+  mediaSection?.classList.add("hidden");
+  crewSection?.classList.add("hidden");
+
+  document.getElementById("modeStoresBtn")?.classList.remove("accent");
+  document.getElementById("modeMediaBtn")?.classList.remove("accent");
+  document.getElementById("modeCrewBtn")?.classList.remove("accent");
+
+  document.getElementById("modeStoresBtn")?.classList.add("secondary");
+  document.getElementById("modeMediaBtn")?.classList.add("secondary");
+  document.getElementById("modeCrewBtn")?.classList.add("secondary");
+
+  if (mode === "stores") {
+    storeSection?.classList.remove("hidden");
+    title!.textContent = "Search Stores";
+    document.getElementById("modeStoresBtn")?.classList.add("accent");
+    document.getElementById("modeStoresBtn")?.classList.remove("secondary");
+    setGridColumns(storeColumnDefs);
+    if (openModalBtn) openModalBtn.style.display = "inline-flex";
+  }
+
+  if (mode === "media") {
+    mediaSection?.classList.remove("hidden");
+    title!.textContent = "Search Media";
+    document.getElementById("modeMediaBtn")?.classList.add("accent");
+    document.getElementById("modeMediaBtn")?.classList.remove("secondary");
+    setGridColumns(mediaColumnDefs);
+    if (openModalBtn) openModalBtn.style.display = "none";
+  }
+
+  if (mode === "crew") {
+    crewSection?.classList.remove("hidden");
+    title!.textContent = "Search Crew";
+    document.getElementById("modeCrewBtn")?.classList.add("accent");
+    document.getElementById("modeCrewBtn")?.classList.remove("secondary");
+    setGridColumns(crewColumnDefs);
+    if (openModalBtn) openModalBtn.style.display = "none";
+  }
+
+  setGridRows([]);
+  setStatus(`Ready for ${mode} search.`);
+}
+
 async function fetchStores(): Promise<void> {
-  setStatus("Loading...");
+  setStatus("Loading stores...");
 
   try {
     const params = new URLSearchParams();
-    const values = getFormValues();
+    const values = getStoreFormValues();
 
     Object.entries(values).forEach(([key, value]) => {
       if (value !== "") params.append(key, value);
@@ -964,6 +1498,7 @@ async function fetchStores(): Promise<void> {
 
     const data = parsed.map((row) => normalizeStoreRow(row as StoreRow));
 
+    setGridColumns(storeColumnDefs);
     setGridRows(data);
     setStatus(`${data.length} store(s) found.`);
   } catch (error) {
@@ -976,23 +1511,154 @@ async function fetchStores(): Promise<void> {
   }
 }
 
-function clearForm(): void {
-  SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+async function fetchMedia(): Promise<void> {
+  setStatus("Loading media...");
+
+  try {
+    const params = new URLSearchParams();
+    const values = getMediaFormValues();
+
+    Object.entries(values).forEach(([key, value]) => {
+      if (value !== "") params.append(key, value);
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${API_BASE}/api/media?${queryString}`
+      : `${API_BASE}/api/media`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "omit",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const parsed = (await response.json()) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      throw new Error("API response was not an array.");
+    }
+
+    const data = parsed.map((row) => normalizeMediaRow(row as MediaRow));
+
+    setGridColumns(mediaColumnDefs);
+    setGridRows(data);
+    setStatus(`${data.length} media record(s) found.`);
+  } catch (error) {
+    console.error("fetchMedia failed:", error);
+    setStatus(
+      error instanceof Error
+        ? `Error loading media data: ${error.message}`
+        : "Error loading media data.",
+    );
+  }
+}
+
+async function fetchCrew(): Promise<void> {
+  setStatus("Loading crew...");
+
+  try {
+    const params = new URLSearchParams();
+    const values = getCrewFormValues();
+
+    Object.entries(values).forEach(([key, value]) => {
+      if (value !== "") params.append(key, value);
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${API_BASE}/api/crew?${queryString}`
+      : `${API_BASE}/api/crew`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "omit",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const parsed = (await response.json()) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      throw new Error("API response was not an array.");
+    }
+
+    const data = parsed.map((row) => normalizeCrewRow(row as CrewRow));
+
+    setGridColumns(crewColumnDefs);
+    setGridRows(data);
+    setStatus(`${data.length} crew record(s) found.`);
+  } catch (error) {
+    console.error("fetchCrew failed:", error);
+    setStatus(
+      error instanceof Error
+        ? `Error loading crew data: ${error.message}`
+        : "Error loading crew data.",
+    );
+  }
+}
+
+async function fetchCurrentMode(): Promise<void> {
+  if (currentMode === "stores") {
+    await fetchStores();
+    return;
+  }
+
+  if (currentMode === "media") {
+    await fetchMedia();
+    return;
+  }
+
+  await fetchCrew();
+}
+
+function clearStoreForm(): void {
+  STORE_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+}
+
+function clearMediaForm(): void {
+  MEDIA_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+}
+
+function clearCrewForm(): void {
+  CREW_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+}
+
+function clearCurrentForm(): void {
+  if (currentMode === "stores") clearStoreForm();
+  if (currentMode === "media") clearMediaForm();
+  if (currentMode === "crew") clearCrewForm();
+
   setGridRows([]);
   setStatus("Filters cleared.");
 }
 
 function clearAddForm(): void {
   ADD_FIELD_IDS.forEach((id) => setInputValue(id, ""));
-
   setInputValue("add_country", "");
   setInputValue("add_quest", "");
 }
 
-function loadAllStores(): void {
-  SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+function loadAllCurrentMode(): void {
+  if (currentMode === "stores") clearStoreForm();
+  if (currentMode === "media") clearMediaForm();
+  if (currentMode === "crew") clearCrewForm();
+
   requestAnimationFrame(() => {
-    void fetchStores();
+    void fetchCurrentMode();
   });
 }
 
@@ -1083,6 +1749,11 @@ async function addStore(): Promise<void> {
         ? `Store added successfully. Store ID: ${result.store_id}`
         : "Store added successfully.",
     );
+
+    if (currentMode !== "stores") {
+      showSearchSection("stores");
+    }
+
     await fetchStores();
   } catch (err) {
     console.error("addStore failed:", err);
@@ -1096,12 +1767,70 @@ async function addStore(): Promise<void> {
 
 function attachAutoSearch(
   id: string,
+  callback: () => void | Promise<void>,
   eventName: "input" | "change" = "input",
 ): void {
   document.getElementById(id)?.addEventListener(eventName, () => {
-    void fetchStores();
+    void Promise.resolve(callback());
   });
 }
+
+document.getElementById("modeStoresBtn")?.addEventListener("click", () => {
+  playClick();
+  showSearchSection("stores");
+});
+
+document.getElementById("modeMediaBtn")?.addEventListener("click", () => {
+  playClick();
+  showSearchSection("media");
+});
+
+document.getElementById("modeCrewBtn")?.addEventListener("click", () => {
+  playClick();
+  showSearchSection("crew");
+});
+
+document
+  .getElementById("goToMediaFromStoreBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("media");
+  });
+
+document
+  .getElementById("goToCrewFromStoreBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("crew");
+  });
+
+document
+  .getElementById("backToStoresFromMediaBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("stores");
+  });
+
+document
+  .getElementById("goToCrewFromMediaBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("crew");
+  });
+
+document
+  .getElementById("backToStoresFromCrewBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("stores");
+  });
+
+document
+  .getElementById("goToMediaFromCrewBtn")
+  ?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("media");
+  });
 
 document.getElementById("searchBtn")?.addEventListener("click", () => {
   startMusic();
@@ -1112,13 +1841,58 @@ document.getElementById("searchBtn")?.addEventListener("click", () => {
 document.getElementById("clearBtn")?.addEventListener("click", () => {
   startMusic();
   playClick();
-  clearForm();
+  clearStoreForm();
+  setGridRows([]);
+  setStatus("Store filters cleared.");
 });
 
 document.getElementById("loadAllBtn")?.addEventListener("click", () => {
   startMusic();
   playClick();
-  loadAllStores();
+  clearStoreForm();
+  void fetchStores();
+});
+
+document.getElementById("mediaSearchBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  void fetchMedia();
+});
+
+document.getElementById("mediaClearBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  clearMediaForm();
+  setGridRows([]);
+  setStatus("Media filters cleared.");
+});
+
+document.getElementById("mediaLoadAllBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  clearMediaForm();
+  void fetchMedia();
+});
+
+document.getElementById("crewSearchBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  void fetchCrew();
+});
+
+document.getElementById("crewClearBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  clearCrewForm();
+  setGridRows([]);
+  setStatus("Crew filters cleared.");
+});
+
+document.getElementById("crewLoadAllBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  clearCrewForm();
+  void fetchCrew();
 });
 
 document.getElementById("openModalBtn")?.addEventListener("click", () => {
@@ -1191,20 +1965,44 @@ document.getElementById("musicToggleBtn")?.addEventListener("click", () => {
   updateMusicButton();
 });
 
-attachAutoSearch("store_name");
-attachAutoSearch("address");
-attachAutoSearch("address_2");
-attachAutoSearch("city");
-attachAutoSearch("state");
-attachAutoSearch("zip");
-attachAutoSearch("phone_number");
-attachAutoSearch("country", "change");
-attachAutoSearch("quest_filter", "change");
+// Store autosearch
+attachAutoSearch("store_name", fetchStores);
+attachAutoSearch("address", fetchStores);
+attachAutoSearch("address_2", fetchStores);
+attachAutoSearch("city", fetchStores);
+attachAutoSearch("state", fetchStores);
+attachAutoSearch("zip", fetchStores);
+attachAutoSearch("phone_number", fetchStores);
+attachAutoSearch("country", fetchStores, "change");
+attachAutoSearch("quest_filter", fetchStores, "change");
+
+// Media autosearch
+attachAutoSearch("media_title", fetchMedia);
+attachAutoSearch("media_type", fetchMedia);
+attachAutoSearch("media_format", fetchMedia);
+attachAutoSearch("media_genre", fetchMedia);
+attachAutoSearch("media_platform", fetchMedia);
+attachAutoSearch("media_year", fetchMedia);
+attachAutoSearch("media_company", fetchMedia);
+attachAutoSearch("media_location", fetchMedia);
+
+// Crew autosearch
+attachAutoSearch("crew_name", fetchCrew);
+attachAutoSearch("crew_role", fetchCrew);
+attachAutoSearch("crew_department", fetchCrew);
+attachAutoSearch("crew_email", fetchCrew);
+attachAutoSearch("crew_phone", fetchCrew);
+attachAutoSearch("crew_city", fetchCrew);
+attachAutoSearch("crew_state", fetchCrew);
+attachAutoSearch("crew_country", fetchCrew);
+attachAutoSearch("crew_company", fetchCrew);
+attachAutoSearch("crew_project", fetchCrew);
 
 function bootstrap(): void {
   ensureGridIsVisible();
   updateMusicButton();
   updateVolumeLabel(bgMusic.volume);
+  showSearchSection("stores");
 
   requestAnimationFrame(() => {
     void fetchStores();
