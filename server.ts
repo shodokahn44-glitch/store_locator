@@ -88,7 +88,7 @@ async function connectToMongo(): Promise<void> {
   storesCollection = db.collection<StoreDocument>(COLLECTION_NAME);
 
   console.log(
-    `Connected to MongoDB database "${DB_NAME}", collection "${COLLECTION_NAME}"`
+    `Connected to MongoDB database "${DB_NAME}", collection "${COLLECTION_NAME}"`,
   );
 }
 
@@ -116,7 +116,9 @@ function getAddress2Value(store: Partial<StoreDocument>): string {
 function normalizeQuestFlags(store: Partial<StoreDocument>) {
   return {
     nes_quest: normalizeBoolean(store.nes_quest ?? store.nintendo_quest),
-    snes_quest: normalizeBoolean(store.snes_quest ?? store.super_nintendo_quest),
+    snes_quest: normalizeBoolean(
+      store.snes_quest ?? store.super_nintendo_quest,
+    ),
     n64_quest: normalizeBoolean(store.n64_quest),
   };
 }
@@ -130,8 +132,8 @@ function normalizeStoreDocument(doc: StoreDocument): StoreApiResponse {
       typeof doc.store_id === "number"
         ? doc.store_id
         : doc.store_id !== undefined
-        ? Number(doc.store_id)
-        : undefined,
+          ? Number(doc.store_id)
+          : undefined,
     store_name: normalizeString(doc.store_name),
     address: normalizeString(doc.address),
     address_2: getAddress2Value(doc),
@@ -166,8 +168,8 @@ async function getNextStoreId(): Promise<number> {
     typeof highestRaw === "number"
       ? highestRaw
       : highestRaw !== undefined
-      ? Number(highestRaw)
-      : 0;
+        ? Number(highestRaw)
+        : 0;
 
   return Number.isFinite(highest) ? highest + 1 : 1;
 }

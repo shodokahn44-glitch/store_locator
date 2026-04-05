@@ -180,7 +180,11 @@ body {
 }
 
 .retro-panel {
-  background: linear-gradient(180deg, rgba(19, 32, 58, 0.92), rgba(10, 20, 42, 0.9));
+  background: linear-gradient(
+    180deg,
+    rgba(19, 32, 58, 0.92),
+    rgba(10, 20, 42, 0.9)
+  );
   border: 1px solid rgba(110, 145, 210, 0.28);
   box-shadow:
     0 18px 40px rgba(0, 0, 0, 0.35),
@@ -276,7 +280,9 @@ select {
   padding: 8px 12px;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 input:focus,
@@ -306,7 +312,9 @@ input[type="time"] {
   color: #04111f;
   background: linear-gradient(180deg, #54c7ff, #2699db);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-  transition: transform 0.12s ease, filter 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
 }
 
 .retro-btn:hover {
@@ -339,7 +347,9 @@ input[type="time"] {
   color: #fff;
   background: linear-gradient(180deg, #ff4fd8, #b026db);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-  transition: transform 0.12s ease, filter 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
 }
 
 .join-btn:hover {
@@ -371,7 +381,9 @@ input[type="time"] {
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .toast.show {
@@ -396,14 +408,13 @@ input[type="time"] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.02) 0px,
-      rgba(255, 255, 255, 0.02) 1px,
-      transparent 2px,
-      transparent 4px
-    );
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 2px,
+    transparent 4px
+  );
   opacity: 0.15;
   mix-blend-mode: soft-light;
 }
@@ -720,38 +731,38 @@ input[type="time"] {
   }
 
   .hours-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 
-/* HOURS ALIGNMENT FIX */
-.detail-hours-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+  /* HOURS ALIGNMENT FIX */
+  .detail-hours-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 
-/* Each row = perfectly aligned columns */
-.hours-row {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  align-items: center;
-  font-size: 14px;
-}
+  /* Each row = perfectly aligned columns */
+  .hours-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: center;
+    font-size: 14px;
+  }
 
-/* Day label */
-.hours-row span:first-child {
-  font-weight: 800;
-  color: #7fd6ff;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+  /* Day label */
+  .hours-row span:first-child {
+    font-weight: 800;
+    color: #7fd6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 
-/* Time */
-.hours-row span:last-child {
-  color: #e8f3ff;
-}
+  /* Time */
+  .hours-row span:last-child {
+    color: #e8f3ff;
+  }
 
   .to-text {
     display: none;
