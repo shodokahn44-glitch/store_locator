@@ -170,9 +170,7 @@ interface NewStoreFormValues {
   zip: string;
   phone_number: string;
   country: string;
-  nes_quest: boolean;
-  snes_quest: boolean;
-  n64_quest: boolean;
+  quest: string;
   sunday_hours: string;
   monday_hours: string;
   tuesday_hours: string;
@@ -344,26 +342,13 @@ app.innerHTML = `
           </div>
 
           <div>
-            <label for="add_nes_quest">Nintendo Quest Participant</label>
-            <select id="add_nes_quest">
-              <option value="false" selected>No</option>
-              <option value="true">Yes</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="add_snes_quest">Super Nintendo Quest Participant</label>
-            <select id="add_snes_quest">
-              <option value="false" selected>No</option>
-              <option value="true">Yes</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="add_n64_quest">Nintendo 64 Quest Participant</label>
-            <select id="add_n64_quest">
-              <option value="false" selected>No</option>
-              <option value="true">Yes</option>
+            <label for="add_quest">Quest Participated In</label>
+            <select id="add_quest">
+              <option value="">None</option>
+              <option value="nes">Nintendo Quest</option>
+              <option value="snes">Super Nintendo Quest</option>
+              <option value="n64">Nintendo 64 Quest</option>
+              <option value="all">All Quests</option>
             </select>
           </div>
         </div>
@@ -893,9 +878,7 @@ function getNewStoreFormValues(): NewStoreFormValues {
     zip: getInputValue("add_zip"),
     phone_number: getInputValue("add_phone_number"),
     country: getInputValue("add_country"),
-    nes_quest: getInputValue("add_nes_quest") === "true",
-    snes_quest: getInputValue("add_snes_quest") === "true",
-    n64_quest: getInputValue("add_n64_quest") === "true",
+    quest: getInputValue("add_quest"),
     sunday_hours: buildDayHours("add_sun_open", "add_sun_close"),
     monday_hours: buildDayHours("add_mon_open", "add_mon_close"),
     tuesday_hours: buildDayHours("add_tue_open", "add_tue_close"),
@@ -927,9 +910,7 @@ const ADD_FIELD_IDS = [
   "add_zip",
   "add_phone_number",
   "add_country",
-  "add_nes_quest",
-  "add_snes_quest",
-  "add_n64_quest",
+  "add_quest",
   "add_sun_open",
   "add_sun_close",
   "add_mon_open",
@@ -1005,9 +986,7 @@ function clearAddForm(): void {
   ADD_FIELD_IDS.forEach((id) => setInputValue(id, ""));
 
   setInputValue("add_country", "");
-  setInputValue("add_nes_quest", "false");
-  setInputValue("add_snes_quest", "false");
-  setInputValue("add_n64_quest", "false");
+  setInputValue("add_quest", "");
 }
 
 function loadAllStores(): void {
@@ -1033,6 +1012,27 @@ async function addStore(): Promise<void> {
     return;
   }
 
+  let nes = false;
+  let snes = false;
+  let n64 = false;
+
+  switch (values.quest) {
+    case "nes":
+      nes = true;
+      break;
+    case "snes":
+      snes = true;
+      break;
+    case "n64":
+      n64 = true;
+      break;
+    case "all":
+      nes = true;
+      snes = true;
+      n64 = true;
+      break;
+  }
+
   const payload = {
     store_name: values.store_name,
     address: values.address,
@@ -1042,9 +1042,9 @@ async function addStore(): Promise<void> {
     zip: values.zip,
     phone_number: values.phone_number,
     country: values.country,
-    nes_quest: values.nes_quest,
-    snes_quest: values.snes_quest,
-    n64_quest: values.n64_quest,
+    nes_quest: nes,
+    snes_quest: snes,
+    n64_quest: n64,
     sunday: values.sunday_hours,
     monday: values.monday_hours,
     tuesday: values.tuesday_hours,
