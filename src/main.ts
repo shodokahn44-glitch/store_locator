@@ -1877,20 +1877,6 @@ async function fetchCrew(): Promise<void> {
   }
 }
 
-async function fetchCurrentMode(): Promise<void> {
-  if (currentMode === "stores") {
-    await fetchStores();
-    return;
-  }
-
-  if (currentMode === "media") {
-    await fetchMedia();
-    return;
-  }
-
-  await fetchCrew();
-}
-
 function clearStoreForm(): void {
   STORE_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
 }
