@@ -5,6 +5,9 @@ import {
   createGrid,
   GridApi,
   GridOptions,
+  ICellRendererParams,
+  ValueGetterParams,
+  CellClickedEvent,
 } from "ag-grid-community";
 
 import "ag-grid-community/styles/ag-grid.css";
@@ -54,6 +57,10 @@ const API_BASE =
   window.location.hostname === "127.0.0.1"
     ? "http://localhost:3000"
     : "";
+
+function apiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
 
 function assetUrl(path: string): string {
   return new URL(path, window.location.origin).toString();
@@ -125,6 +132,14 @@ function updateVolumeLabel(value: number): void {
 
 type SearchMode = "stores" | "media" | "crew";
 
+type AuthUser = {
+  id: string;
+  username: string;
+  email: string;
+};
+
+type MeResponse = { ok: true; user: AuthUser } | { error: string };
+
 interface StoreRow {
   store_name?: string;
   store_id?: number;
@@ -149,6 +164,7 @@ interface StoreRow {
   snes_quest?: boolean;
   nintendo_quest?: boolean;
   super_nintendo_quest?: boolean;
+  [key: string]: unknown;
 }
 
 interface MediaRow {
@@ -280,526 +296,757 @@ if (!app) {
   throw new Error("App element not found.");
 }
 
-app.innerHTML = `
-  <div class="page retro-shell">
-    <header class="page-hero">
-      <div class="hero-logo-wrap">
-        <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo" />
+let currentMode: SearchMode = "stores";
+let currentUser: AuthUser | null = null;
+let gridApi: GridApi<GridRow> | null = null;
+
+async function apiRequest<T>(
+  url: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...(options.headers ?? {}),
+    },
+  });
+
+  const rawText = await response.text();
+  let parsed: unknown = {};
+  try {
+    parsed = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    parsed = rawText;
+  }
+
+  if (!response.ok) {
+    const message =
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "error" in parsed &&
+      typeof (parsed as { error?: unknown }).error === "string"
+        ? (parsed as { error: string }).error
+        : `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+
+  return parsed as T;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderLoading(): void {
+  app!.innerHTML = `
+    <div class="auth-page">
+      <div class="auth-card">
+        <h1>Loading...</h1>
       </div>
-      <p class="hero-tagline">Search stores, media, crew, add new locations, and keep the catalog synced.</p>
-    </header>
+    </div>
+  `;
+}
 
-    <section class="top-row">
-      <div class="panel retro-panel music-panel">
-        <h2>Soundtrack</h2>
+function renderAuthScreen(): void {
+  app!.innerHTML = `
+    <div class="auth-page">
+      <div class="auth-card">
+        <h1>Neo Retro Login</h1>
+        <p class="subtitle">Sign in or create an account</p>
 
-        <div class="audio-panel">
-          <div class="audio-controls">
-            <button id="musicToggleBtn" class="retro-btn secondary" type="button">Music: On</button>
+        <div id="auth-message" class="auth-message"></div>
 
-            <label class="volume-wrap" for="volumeSlider">
-              <span>Volume</span>
-              <input id="volumeSlider" type="range" min="0" max="100" value="25" />
-              <span id="volumeValue">25%</span>
-            </label>
-          </div>
+        <div class="tabs">
+          <button id="show-login" class="tab-btn active" type="button">Login</button>
+          <button id="show-register" class="tab-btn" type="button">Register</button>
+        </div>
 
-          <div class="music-info">
-            <div class="song-title">♫ Nintendo Quest Theme Song</div>
-            <div class="song-artist">John McCarthy - Nintendo Quest (Official 8-bit Soundtrack)</div>
+        <form id="login-form" class="auth-form">
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" required />
+
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" required />
+
+          <button class="primary-btn" type="submit">Login</button>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <label for="register-username">Username</label>
+          <input id="register-username" type="text" required />
+
+          <label for="register-email">Email</label>
+          <input id="register-email" type="email" required />
+
+          <label for="register-password">Password</label>
+          <input id="register-password" type="password" required />
+
+          <button class="primary-btn" type="submit">Create Account</button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const authMessage = document.getElementById("auth-message");
+  const loginForm = document.getElementById(
+    "login-form",
+  ) as HTMLFormElement | null;
+  const registerForm = document.getElementById(
+    "register-form",
+  ) as HTMLFormElement | null;
+  const showLogin = document.getElementById("show-login");
+  const showRegister = document.getElementById("show-register");
+
+  function setAuthMessage(message: string, isError = false): void {
+    if (!authMessage) return;
+    authMessage.textContent = message;
+    authMessage.className = `auth-message ${isError ? "error" : "success"}`;
+  }
+
+  showLogin?.addEventListener("click", () => {
+    loginForm?.classList.remove("hidden");
+    registerForm?.classList.add("hidden");
+    showLogin.classList.add("active");
+    showRegister?.classList.remove("active");
+    setAuthMessage("");
+  });
+
+  showRegister?.addEventListener("click", () => {
+    registerForm?.classList.remove("hidden");
+    loginForm?.classList.add("hidden");
+    showRegister.classList.add("active");
+    showLogin?.classList.remove("active");
+    setAuthMessage("");
+  });
+
+  loginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email =
+      (
+        document.getElementById("login-email") as HTMLInputElement | null
+      )?.value.trim() ?? "";
+    const password =
+      (document.getElementById("login-password") as HTMLInputElement | null)
+        ?.value ?? "";
+
+    try {
+      setAuthMessage("Logging in...");
+      const result = await apiRequest<{ ok: true; user: AuthUser }>(
+        apiUrl("/api/auth/login"),
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        },
+      );
+      currentUser = result.user;
+      renderAppShell(result.user);
+      initializeAppAfterRender();
+    } catch (error) {
+      setAuthMessage(
+        error instanceof Error ? error.message : "Login failed",
+        true,
+      );
+    }
+  });
+
+  registerForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const username =
+      (
+        document.getElementById("register-username") as HTMLInputElement | null
+      )?.value.trim() ?? "";
+    const email =
+      (
+        document.getElementById("register-email") as HTMLInputElement | null
+      )?.value.trim() ?? "";
+    const password =
+      (document.getElementById("register-password") as HTMLInputElement | null)
+        ?.value ?? "";
+
+    try {
+      setAuthMessage("Creating account...");
+      const result = await apiRequest<{ ok: true; user: AuthUser }>(
+        apiUrl("/api/auth/register"),
+        {
+          method: "POST",
+          body: JSON.stringify({ username, email, password }),
+        },
+      );
+      currentUser = result.user;
+      renderAppShell(result.user);
+      initializeAppAfterRender();
+    } catch (error) {
+      setAuthMessage(
+        error instanceof Error ? error.message : "Registration failed",
+        true,
+      );
+    }
+  });
+}
+
+function renderAppShell(user: AuthUser): void {
+  app!.innerHTML = `
+    <div class="app-topbar">
+      <div class="app-user">
+        <strong>${escapeHtml(user.username)}</strong>
+        <span>${escapeHtml(user.email)}</span>
+      </div>
+      <button id="logoutBtn" class="retro-btn secondary" type="button">Logout</button>
+    </div>
+
+    <div class="page retro-shell">
+      <header class="page-hero">
+        <div class="hero-logo-wrap">
+          <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo" />
+        </div>
+        <p class="hero-tagline">Search stores, media, crew, add new locations, and keep the catalog synced.</p>
+      </header>
+
+      <section class="top-row">
+        <div class="panel retro-panel music-panel">
+          <h2>Soundtrack</h2>
+
+          <div class="audio-panel">
+            <div class="audio-controls">
+              <button id="musicToggleBtn" class="retro-btn secondary" type="button">Music: On</button>
+
+              <label class="volume-wrap" for="volumeSlider">
+                <span>Volume</span>
+                <input id="volumeSlider" type="range" min="0" max="100" value="25" />
+                <span id="volumeValue">25%</span>
+              </label>
+            </div>
+
+            <div class="music-info">
+              <div class="song-title">♫ Nintendo Quest Theme Song</div>
+              <div class="song-artist">John McCarthy - Nintendo Quest (Official 8-bit Soundtrack)</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="panel retro-panel search-panel">
-        <div class="mode-switcher">
-          <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
-          <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
-          <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
+        <div class="panel retro-panel search-panel">
+          <div class="mode-switcher">
+            <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
+            <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
+            <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
+          </div>
+
+          <h2 id="searchPanelTitle">Search Stores</h2>
+
+          <div id="storeSearchSection" class="search-section" style="display:block;">
+            <div class="search-grid">
+              <div>
+                <label for="store_name">Store Name</label>
+                <input id="store_name" type="text" />
+              </div>
+
+              <div>
+                <label for="address">Address</label>
+                <input id="address" type="text" />
+              </div>
+
+              <div>
+                <label for="address_2">Address 2</label>
+                <input id="address_2" type="text" />
+              </div>
+
+              <div>
+                <label for="city">City</label>
+                <input id="city" type="text" />
+              </div>
+
+              <div>
+                <label for="state">State / Province</label>
+                <input id="state" type="text" />
+              </div>
+
+              <div>
+                <label for="zip">Zip / Postal Code</label>
+                <input id="zip" type="text" />
+              </div>
+
+              <div>
+                <label for="phone_number">Phone Number</label>
+                <input id="phone_number" type="text" />
+              </div>
+
+              <div>
+                <label for="country">Country</label>
+                <select id="country">
+                  <option value="">All Countries</option>
+                  <option value="USA">USA</option>
+                  <option value="Canada">Canada</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="quest_filter">Quest Participated In</label>
+                <select id="quest_filter">
+                  <option value="">Select a Quest</option>
+                  <option value="nes_quest">Nintendo Quest</option>
+                  <option value="snes_quest">Super Nintendo Quest</option>
+                  <option value="n64_quest">Nintendo 64 Quest</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="searchBtn" class="retro-btn" type="button">Search</button>
+              <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
+              <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
+              <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+            </div>
+          </div>
+
+          <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
+            <div class="search-grid">
+              <div>
+                <label for="media_title">Title</label>
+                <input id="media_title" type="text" />
+              </div>
+
+              <div>
+                <label for="media_type">Media Type</label>
+                <input id="media_type" type="text" />
+              </div>
+
+              <div>
+                <label for="media_format">Format</label>
+                <input id="media_format" type="text" />
+              </div>
+
+              <div>
+                <label for="media_genre">Genre</label>
+                <input id="media_genre" type="text" />
+              </div>
+
+              <div>
+                <label for="media_platform">Platform</label>
+                <input id="media_platform" type="text" />
+              </div>
+
+              <div>
+                <label for="media_year">Year</label>
+                <input id="media_year" type="text" />
+              </div>
+
+              <div>
+                <label for="media_company">Company / Studio / Publisher</label>
+                <input id="media_company" type="text" />
+              </div>
+
+              <div>
+                <label for="media_location">Location</label>
+                <input id="media_location" type="text" />
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="mediaSearchBtn" class="retro-btn" type="button">Search Media</button>
+              <button id="mediaClearBtn" class="retro-btn secondary" type="button">Clear</button>
+              <button id="mediaLoadAllBtn" class="retro-btn accent" type="button">Load All Media</button>
+              <button id="openAddMediaBtn" class="retro-btn success" type="button">Add Media</button>
+            </div>
+          </div>
+
+          <div id="crewSearchSection" class="search-section hidden" style="display:none;">
+            <div class="search-grid">
+              <div>
+                <label for="crew_name">Name</label>
+                <input id="crew_name" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_role">Role / Title</label>
+                <input id="crew_role" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_department">Department</label>
+                <input id="crew_department" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_email">Email</label>
+                <input id="crew_email" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_phone">Phone</label>
+                <input id="crew_phone" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_city">City</label>
+                <input id="crew_city" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_state">State / Province</label>
+                <input id="crew_state" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_country">Country</label>
+                <input id="crew_country" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_company">Company</label>
+                <input id="crew_company" type="text" />
+              </div>
+
+              <div>
+                <label for="crew_project">Project</label>
+                <input id="crew_project" type="text" />
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="crewSearchBtn" class="retro-btn" type="button">Search Crew</button>
+              <button id="crewClearBtn" class="retro-btn secondary" type="button">Clear</button>
+              <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
+              <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <h2 id="searchPanelTitle">Search Stores</h2>
+      <div id="status" class="status-bar">Ready.</div>
+      <div id="toast" class="toast">Added to the Quest 🚀</div>
 
-        <div id="storeSearchSection" class="search-section" style="display:block;">
-          <div class="search-grid">
+      <div id="storeGrid" class="ag-theme-alpine retro-grid"></div>
+
+      <div id="addStoreModal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-card retro-panel">
+          <div class="modal-header">
+            <h2>Join the Quest</h2>
+            <button id="closeAddStoreBtn" class="modal-close-btn" type="button">×</button>
+          </div>
+
+          <div class="search-grid modal-grid">
             <div>
-              <label for="store_name">Store Name</label>
-              <input id="store_name" type="text" />
+              <label for="add_store_name">Store Name</label>
+              <input id="add_store_name" type="text" required />
             </div>
 
             <div>
-              <label for="address">Address</label>
-              <input id="address" type="text" />
+              <label for="add_address">Address</label>
+              <input id="add_address" type="text" required />
             </div>
 
             <div>
-              <label for="address_2">Address 2</label>
-              <input id="address_2" type="text" />
+              <label for="add_address_2">Address 2</label>
+              <input id="add_address_2" type="text" />
             </div>
 
             <div>
-              <label for="city">City</label>
-              <input id="city" type="text" />
+              <label for="add_city">City</label>
+              <input id="add_city" type="text" required />
             </div>
 
             <div>
-              <label for="state">State / Province</label>
-              <input id="state" type="text" />
+              <label for="add_state">State / Province</label>
+              <input id="add_state" type="text" required />
             </div>
 
             <div>
-              <label for="zip">Zip / Postal Code</label>
-              <input id="zip" type="text" />
+              <label for="add_zip">Zip / Postal Code</label>
+              <input id="add_zip" type="text" required />
             </div>
 
             <div>
-              <label for="phone_number">Phone Number</label>
-              <input id="phone_number" type="text" />
+              <label for="add_phone_number">Phone Number</label>
+              <input id="add_phone_number" type="text" required />
             </div>
 
             <div>
-              <label for="country">Country</label>
-              <select id="country">
-                <option value="">All Countries</option>
+              <label for="add_country">Country</label>
+              <select id="add_country" required>
+                <option value="">Select Country</option>
                 <option value="USA">USA</option>
                 <option value="Canada">Canada</option>
               </select>
             </div>
 
             <div>
-              <label for="quest_filter">Quest Participated In</label>
-              <select id="quest_filter">
-                <option value="">Select a Quest</option>
-                <option value="nes_quest">Nintendo Quest</option>
-                <option value="snes_quest">Super Nintendo Quest</option>
-                <option value="n64_quest">Nintendo 64 Quest</option>
+              <label for="add_quest">Quest Participated In</label>
+              <select id="add_quest">
+                <option value="">None</option>
+                <option value="nes">Nintendo Quest</option>
+                <option value="snes">Super Nintendo Quest</option>
+                <option value="n64">Nintendo 64 Quest</option>
+                <option value="all">All Quests</option>
               </select>
             </div>
           </div>
 
-          <div class="button-row">
-            <button id="searchBtn" class="retro-btn" type="button">Search</button>
-            <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
-            <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
-            <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
-          </div>
-        </div>
+          <div class="modal-hours-section">
+            <h3>Hours of Operation</h3>
 
-        <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
-          <div class="search-grid">
-            <div>
-              <label for="media_title">Title</label>
-              <input id="media_title" type="text" />
-            </div>
+            <div class="hours-grid">
+              <label for="add_sun_open">Sunday</label>
+              <input type="time" id="add_sun_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_sun_close" />
 
-            <div>
-              <label for="media_type">Media Type</label>
-              <input id="media_type" type="text" />
-            </div>
+              <label for="add_mon_open">Monday</label>
+              <input type="time" id="add_mon_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_mon_close" />
 
-            <div>
-              <label for="media_format">Format</label>
-              <input id="media_format" type="text" />
-            </div>
+              <label for="add_tue_open">Tuesday</label>
+              <input type="time" id="add_tue_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_tue_close" />
 
-            <div>
-              <label for="media_genre">Genre</label>
-              <input id="media_genre" type="text" />
-            </div>
+              <label for="add_wed_open">Wednesday</label>
+              <input type="time" id="add_wed_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_wed_close" />
 
-            <div>
-              <label for="media_platform">Platform</label>
-              <input id="media_platform" type="text" />
-            </div>
+              <label for="add_thu_open">Thursday</label>
+              <input type="time" id="add_thu_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_thu_close" />
 
-            <div>
-              <label for="media_year">Year</label>
-              <input id="media_year" type="text" />
-            </div>
+              <label for="add_fri_open">Friday</label>
+              <input type="time" id="add_fri_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_fri_close" />
 
-            <div>
-              <label for="media_company">Company / Studio / Publisher</label>
-              <input id="media_company" type="text" />
-            </div>
-
-            <div>
-              <label for="media_location">Location</label>
-              <input id="media_location" type="text" />
+              <label for="add_sat_open">Saturday</label>
+              <input type="time" id="add_sat_open" />
+              <span class="to-text">to</span>
+              <input type="time" id="add_sat_close" />
             </div>
           </div>
 
-          <div class="button-row">
-            <button id="mediaSearchBtn" class="retro-btn" type="button">Search Media</button>
-            <button id="mediaClearBtn" class="retro-btn secondary" type="button">Clear</button>
-            <button id="mediaLoadAllBtn" class="retro-btn accent" type="button">Load All Media</button>
-            <button id="openAddMediaBtn" class="retro-btn success" type="button">Add Media</button>
-          </div>
-        </div>
-
-        <div id="crewSearchSection" class="search-section hidden" style="display:none;">
-          <div class="search-grid">
-            <div>
-              <label for="crew_name">Name</label>
-              <input id="crew_name" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_role">Role / Title</label>
-              <input id="crew_role" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_department">Department</label>
-              <input id="crew_department" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_email">Email</label>
-              <input id="crew_email" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_phone">Phone</label>
-              <input id="crew_phone" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_city">City</label>
-              <input id="crew_city" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_state">State / Province</label>
-              <input id="crew_state" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_country">Country</label>
-              <input id="crew_country" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_company">Company</label>
-              <input id="crew_company" type="text" />
-            </div>
-
-            <div>
-              <label for="crew_project">Project</label>
-              <input id="crew_project" type="text" />
-            </div>
-          </div>
-
-          <div class="button-row">
-            <button id="crewSearchBtn" class="retro-btn" type="button">Search Crew</button>
-            <button id="crewClearBtn" class="retro-btn secondary" type="button">Clear</button>
-            <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
-            <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
+          <div class="button-row modal-actions">
+            <button id="submitAddStoreBtn" class="retro-btn success" type="button">Add to Quest</button>
+            <button id="cancelAddStoreBtn" class="retro-btn secondary" type="button">Cancel</button>
           </div>
         </div>
       </div>
-    </section>
 
-    <div id="status" class="status-bar">Ready.</div>
-    <div id="toast" class="toast">Added to the Quest 🚀</div>
-
-    <div id="storeGrid" class="ag-theme-alpine retro-grid"></div>
-
-    <div id="addStoreModal" class="modal-overlay hidden" aria-hidden="true">
-      <div class="modal-card retro-panel">
-        <div class="modal-header">
-          <h2>Join the Quest</h2>
-          <button id="closeAddStoreBtn" class="modal-close-btn" type="button">×</button>
-        </div>
-
-        <div class="search-grid modal-grid">
-          <div>
-            <label for="add_store_name">Store Name</label>
-            <input id="add_store_name" type="text" required />
+      <div id="addMediaModal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-card retro-panel">
+          <div class="modal-header">
+            <h2>Add Media</h2>
+            <button id="closeAddMediaBtn" class="modal-close-btn" type="button">×</button>
           </div>
 
-          <div>
-            <label for="add_address">Address</label>
-            <input id="add_address" type="text" required />
+          <div class="search-grid modal-grid">
+            <div>
+              <label for="add_media_title">Title</label>
+              <input id="add_media_title" type="text" />
+            </div>
+            <div>
+              <label for="add_media_type">Media Type</label>
+              <input id="add_media_type" type="text" />
+            </div>
+            <div>
+              <label for="add_media_format">Format</label>
+              <input id="add_media_format" type="text" />
+            </div>
+            <div>
+              <label for="add_media_genre">Genre</label>
+              <input id="add_media_genre" type="text" />
+            </div>
+            <div>
+              <label for="add_media_platform">Platform</label>
+              <input id="add_media_platform" type="text" />
+            </div>
+            <div>
+              <label for="add_media_year">Year</label>
+              <input id="add_media_year" type="text" />
+            </div>
+            <div>
+              <label for="add_media_company">Company</label>
+              <input id="add_media_company" type="text" />
+            </div>
+            <div>
+              <label for="add_media_location">Location</label>
+              <input id="add_media_location" type="text" />
+            </div>
+            <div>
+              <label for="add_media_website">Website</label>
+              <input id="add_media_website" type="text" />
+            </div>
+            <div>
+              <label for="add_media_notes">Notes</label>
+              <input id="add_media_notes" type="text" />
+            </div>
           </div>
 
-          <div>
-            <label for="add_address_2">Address 2</label>
-            <input id="add_address_2" type="text" />
+          <div class="button-row modal-actions">
+            <button id="submitAddMediaBtn" class="retro-btn success" type="button">Save Media</button>
+            <button id="cancelAddMediaBtn" class="retro-btn secondary" type="button">Cancel</button>
           </div>
-
-          <div>
-            <label for="add_city">City</label>
-            <input id="add_city" type="text" required />
-          </div>
-
-          <div>
-            <label for="add_state">State / Province</label>
-            <input id="add_state" type="text" required />
-          </div>
-
-          <div>
-            <label for="add_zip">Zip / Postal Code</label>
-            <input id="add_zip" type="text" required />
-          </div>
-
-          <div>
-            <label for="add_phone_number">Phone Number</label>
-            <input id="add_phone_number" type="text" required />
-          </div>
-
-          <div>
-            <label for="add_country">Country</label>
-            <select id="add_country" required>
-              <option value="">Select Country</option>
-              <option value="USA">USA</option>
-              <option value="Canada">Canada</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="add_quest">Quest Participated In</label>
-            <select id="add_quest">
-              <option value="">None</option>
-              <option value="nes">Nintendo Quest</option>
-              <option value="snes">Super Nintendo Quest</option>
-              <option value="n64">Nintendo 64 Quest</option>
-              <option value="all">All Quests</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="modal-hours-section">
-          <h3>Hours of Operation</h3>
-
-          <div class="hours-grid">
-            <label for="add_sun_open">Sunday</label>
-            <input type="time" id="add_sun_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_sun_close" />
-
-            <label for="add_mon_open">Monday</label>
-            <input type="time" id="add_mon_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_mon_close" />
-
-            <label for="add_tue_open">Tuesday</label>
-            <input type="time" id="add_tue_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_tue_close" />
-
-            <label for="add_wed_open">Wednesday</label>
-            <input type="time" id="add_wed_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_wed_close" />
-
-            <label for="add_thu_open">Thursday</label>
-            <input type="time" id="add_thu_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_thu_close" />
-
-            <label for="add_fri_open">Friday</label>
-            <input type="time" id="add_fri_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_fri_close" />
-
-            <label for="add_sat_open">Saturday</label>
-            <input type="time" id="add_sat_open" />
-            <span class="to-text">to</span>
-            <input type="time" id="add_sat_close" />
-          </div>
-        </div>
-
-        <div class="button-row modal-actions">
-          <button id="submitAddStoreBtn" class="retro-btn success" type="button">Add to Quest</button>
-          <button id="cancelAddStoreBtn" class="retro-btn secondary" type="button">Cancel</button>
         </div>
       </div>
-    </div>
 
-    <div id="addMediaModal" class="modal-overlay hidden" aria-hidden="true">
-      <div class="modal-card retro-panel">
-        <div class="modal-header">
-          <h2>Add Media</h2>
-          <button id="closeAddMediaBtn" class="modal-close-btn" type="button">×</button>
-        </div>
+      <div id="addCrewModal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-card retro-panel">
+          <div class="modal-header">
+            <h2>Add Crew</h2>
+            <button id="closeAddCrewBtn" class="modal-close-btn" type="button">×</button>
+          </div>
 
-        <div class="search-grid modal-grid">
-          <div>
-            <label for="add_media_title">Title</label>
-            <input id="add_media_title" type="text" />
+          <div class="search-grid modal-grid">
+            <div>
+              <label for="add_crew_name">Name</label>
+              <input id="add_crew_name" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_role">Role / Title</label>
+              <input id="add_crew_role" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_department">Department</label>
+              <input id="add_crew_department" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_email">Email</label>
+              <input id="add_crew_email" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_phone">Phone</label>
+              <input id="add_crew_phone" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_city">City</label>
+              <input id="add_crew_city" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_state">State / Province</label>
+              <input id="add_crew_state" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_country">Country</label>
+              <input id="add_crew_country" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_company">Company</label>
+              <input id="add_crew_company" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_project">Project</label>
+              <input id="add_crew_project" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_website">Website</label>
+              <input id="add_crew_website" type="text" />
+            </div>
+            <div>
+              <label for="add_crew_notes">Notes</label>
+              <input id="add_crew_notes" type="text" />
+            </div>
           </div>
-          <div>
-            <label for="add_media_type">Media Type</label>
-            <input id="add_media_type" type="text" />
-          </div>
-          <div>
-            <label for="add_media_format">Format</label>
-            <input id="add_media_format" type="text" />
-          </div>
-          <div>
-            <label for="add_media_genre">Genre</label>
-            <input id="add_media_genre" type="text" />
-          </div>
-          <div>
-            <label for="add_media_platform">Platform</label>
-            <input id="add_media_platform" type="text" />
-          </div>
-          <div>
-            <label for="add_media_year">Year</label>
-            <input id="add_media_year" type="text" />
-          </div>
-          <div>
-            <label for="add_media_company">Company</label>
-            <input id="add_media_company" type="text" />
-          </div>
-          <div>
-            <label for="add_media_location">Location</label>
-            <input id="add_media_location" type="text" />
-          </div>
-          <div>
-            <label for="add_media_website">Website</label>
-            <input id="add_media_website" type="text" />
-          </div>
-          <div>
-            <label for="add_media_notes">Notes</label>
-            <input id="add_media_notes" type="text" />
-          </div>
-        </div>
 
-        <div class="button-row modal-actions">
-          <button id="submitAddMediaBtn" class="retro-btn success" type="button">Save Media</button>
-          <button id="cancelAddMediaBtn" class="retro-btn secondary" type="button">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="addCrewModal" class="modal-overlay hidden" aria-hidden="true">
-      <div class="modal-card retro-panel">
-        <div class="modal-header">
-          <h2>Add Crew</h2>
-          <button id="closeAddCrewBtn" class="modal-close-btn" type="button">×</button>
-        </div>
-
-        <div class="search-grid modal-grid">
-          <div>
-            <label for="add_crew_name">Name</label>
-            <input id="add_crew_name" type="text" />
+          <div class="button-row modal-actions">
+            <button id="submitAddCrewBtn" class="retro-btn success" type="button">Save Crew</button>
+            <button id="cancelAddCrewBtn" class="retro-btn secondary" type="button">Cancel</button>
           </div>
-          <div>
-            <label for="add_crew_role">Role / Title</label>
-            <input id="add_crew_role" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_department">Department</label>
-            <input id="add_crew_department" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_email">Email</label>
-            <input id="add_crew_email" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_phone">Phone</label>
-            <input id="add_crew_phone" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_city">City</label>
-            <input id="add_crew_city" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_state">State / Province</label>
-            <input id="add_crew_state" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_country">Country</label>
-            <input id="add_crew_country" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_company">Company</label>
-            <input id="add_crew_company" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_project">Project</label>
-            <input id="add_crew_project" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_website">Website</label>
-            <input id="add_crew_website" type="text" />
-          </div>
-          <div>
-            <label for="add_crew_notes">Notes</label>
-            <input id="add_crew_notes" type="text" />
-          </div>
-        </div>
-
-        <div class="button-row modal-actions">
-          <button id="submitAddCrewBtn" class="retro-btn success" type="button">Save Crew</button>
-          <button id="cancelAddCrewBtn" class="retro-btn secondary" type="button">Cancel</button>
         </div>
       </div>
-    </div>
 
-    <div id="storeDetailModal" class="modal-overlay hidden" aria-hidden="true">
-      <div class="modal-card retro-panel store-detail-card">
-        <div class="modal-header">
-          <h2>Store Details</h2>
-          <button id="closeStoreDetailBtn" class="modal-close-btn" type="button">×</button>
-        </div>
+      <div id="storeDetailModal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-card retro-panel store-detail-card">
+          <div class="modal-header">
+            <h2>Store Details</h2>
+            <button id="closeStoreDetailBtn" class="modal-close-btn" type="button">×</button>
+          </div>
 
-        <div class="store-detail-body">
-          <div class="store-detail-section">
-            <div class="store-detail-main-grid">
-              <div class="store-detail-info">
-                <div class="store-detail-row">
-                  <strong>Store Name:</strong>
-                  <span id="detail_store_name"></span>
+          <div class="store-detail-body">
+            <div class="store-detail-section">
+              <div class="store-detail-main-grid">
+                <div class="store-detail-info">
+                  <div class="store-detail-row">
+                    <strong>Store Name:</strong>
+                    <span id="detail_store_name"></span>
+                  </div>
+
+                  <div class="store-detail-row address-row">
+                    <strong>Address:</strong>
+                    <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                  </div>
+
+                  <div class="store-detail-row">
+                    <strong>Phone:</strong>
+                    <a id="detail_phone_link" href="#"></a>
+                  </div>
+
+                  <div class="store-detail-row">
+                    <strong>Website:</strong>
+                    <a id="detail_website_link" href="#" target="_blank" rel="noopener noreferrer"></a>
+                  </div>
+
+                  <div class="detail-address-actions">
+                    <button id="detail_directions_btn" class="retro-btn accent" type="button">Get Directions</button>
+                    <button id="detail_copy_btn" class="retro-btn secondary" type="button">Copy Address</button>
+                  </div>
                 </div>
 
-                <div class="store-detail-row address-row">
-                  <strong>Address:</strong>
-                  <a id="detail_address_link" href="#" target="_blank" rel="noopener noreferrer"></a>
-                </div>
-
-                <div class="store-detail-row">
-                  <strong>Phone:</strong>
-                  <a id="detail_phone_link" href="#"></a>
-                </div>
-
-                <div class="store-detail-row">
-                  <strong>Website:</strong>
-                  <a id="detail_website_link" href="#" target="_blank" rel="noopener noreferrer"></a>
-                </div>
-
-                <div class="detail-address-actions">
-                  <button id="detail_directions_btn" class="retro-btn accent" type="button">Get Directions</button>
-                  <button id="detail_copy_btn" class="retro-btn secondary" type="button">Copy Address</button>
+                <div class="store-detail-badge-wrap">
+                  <img id="detail_quest_badge" class="quest-participant-badge hidden" alt="Quest Participant Badge" />
                 </div>
               </div>
+            </div>
 
-              <div class="store-detail-badge-wrap">
-                <img id="detail_quest_badge" class="quest-participant-badge hidden" alt="Quest Participant Badge" />
+            <div class="store-detail-section">
+              <h3>Store Hours</h3>
+              <div class="detail-hours-grid">
+                <div class="hours-row"><span>Sunday:</span><span id="detail_sunday_hours"></span></div>
+                <div class="hours-row"><span>Monday:</span><span id="detail_monday_hours"></span></div>
+                <div class="hours-row"><span>Tuesday:</span><span id="detail_tuesday_hours"></span></div>
+                <div class="hours-row"><span>Wednesday:</span><span id="detail_wednesday_hours"></span></div>
+                <div class="hours-row"><span>Thursday:</span><span id="detail_thursday_hours"></span></div>
+                <div class="hours-row"><span>Friday:</span><span id="detail_friday_hours"></span></div>
+                <div class="hours-row"><span>Saturday:</span><span id="detail_saturday_hours"></span></div>
               </div>
             </div>
           </div>
-
-          <div class="store-detail-section">
-            <h3>Store Hours</h3>
-            <div class="detail-hours-grid">
-              <div class="hours-row"><span>Sunday:</span><span id="detail_sunday_hours"></span></div>
-              <div class="hours-row"><span>Monday:</span><span id="detail_monday_hours"></span></div>
-              <div class="hours-row"><span>Tuesday:</span><span id="detail_tuesday_hours"></span></div>
-              <div class="hours-row"><span>Wednesday:</span><span id="detail_wednesday_hours"></span></div>
-              <div class="hours-row"><span>Thursday:</span><span id="detail_thursday_hours"></span></div>
-              <div class="hours-row"><span>Friday:</span><span id="detail_friday_hours"></span></div>
-              <div class="hours-row"><span>Saturday:</span><span id="detail_saturday_hours"></span></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
-  </div>
-`;
+  `;
+}
 
-let currentMode: SearchMode = "stores";
+function getStatusEl(): HTMLElement | null {
+  return document.getElementById("status");
+}
+
+function setStatus(message: string): void {
+  const status = getStatusEl();
+  if (status) status.textContent = message;
+}
+
+function showToast(message: string): void {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  if (toastTimer) {
+    window.clearTimeout(toastTimer);
+  }
+
+  toastTimer = window.setTimeout(() => {
+    toast.classList.remove("show");
+  }, 4000);
+}
 
 function ensureGridIsVisible(): void {
   const gridEl = document.getElementById("storeGrid") as HTMLDivElement | null;
@@ -872,14 +1119,11 @@ function buildGoogleMapsDirectionsLink(store: StoreRow): string {
 
 function buildWebsiteUrl(website?: string): string {
   if (!website) return "#";
-
   const trimmed = website.trim();
   if (!trimmed) return "#";
-
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
-
   return `https://${trimmed}`;
 }
 
@@ -971,7 +1215,6 @@ function openStoreDetailModal(store: StoreRow): void {
   ) as HTMLImageElement | null;
 
   const storeNameEl = document.getElementById("detail_store_name");
-
   const sundayEl = document.getElementById("detail_sunday_hours");
   const mondayEl = document.getElementById("detail_monday_hours");
   const tuesdayEl = document.getElementById("detail_tuesday_hours");
@@ -1030,10 +1273,8 @@ function openStoreDetailModal(store: StoreRow): void {
       try {
         await navigator.clipboard.writeText(fullAddress);
         showToast("Address copied 📋");
-        setStatus("Address copied to clipboard.");
       } catch (error) {
-        console.error("Failed to copy address:", error);
-        showToast("Copy failed");
+        console.error("Clipboard copy failed:", error);
         setStatus("Could not copy address.");
       }
     };
@@ -1045,7 +1286,7 @@ function openStoreDetailModal(store: StoreRow): void {
       badgeImg.alt = getQuestBadgeAlt(normalizedStore);
       badgeImg.classList.remove("hidden");
     } else {
-      badgeImg.removeAttribute("src");
+      badgeImg.src = "";
       badgeImg.alt = "";
       badgeImg.classList.add("hidden");
     }
@@ -1054,16 +1295,13 @@ function openStoreDetailModal(store: StoreRow): void {
   if (sundayEl) sundayEl.textContent = getHoursValue(normalizedStore.sunday);
   if (mondayEl) mondayEl.textContent = getHoursValue(normalizedStore.monday);
   if (tuesdayEl) tuesdayEl.textContent = getHoursValue(normalizedStore.tuesday);
-  if (wednesdayEl) {
+  if (wednesdayEl)
     wednesdayEl.textContent = getHoursValue(normalizedStore.wednesday);
-  }
-  if (thursdayEl) {
+  if (thursdayEl)
     thursdayEl.textContent = getHoursValue(normalizedStore.thursday);
-  }
   if (fridayEl) fridayEl.textContent = getHoursValue(normalizedStore.friday);
-  if (saturdayEl) {
+  if (saturdayEl)
     saturdayEl.textContent = getHoursValue(normalizedStore.saturday);
-  }
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -1072,104 +1310,241 @@ function openStoreDetailModal(store: StoreRow): void {
 function closeStoreDetailModal(): void {
   const modal = document.getElementById("storeDetailModal");
   if (!modal) return;
-
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
 }
 
-function openAddStoreModal(): void {
-  const modal = document.getElementById("addStoreModal");
+function openModal(modalId: string): void {
+  const modal = document.getElementById(modalId);
   if (!modal) return;
-
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
-
-  const firstInput = document.getElementById(
-    "add_store_name",
-  ) as HTMLInputElement | null;
-  firstInput?.focus();
 }
 
-function closeAddStoreModal(): void {
-  const modal = document.getElementById("addStoreModal");
+function closeModal(modalId: string): void {
+  const modal = document.getElementById(modalId);
   if (!modal) return;
-
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
 }
 
-function openAddMediaModal(): void {
-  const modal = document.getElementById("addMediaModal");
-  if (!modal) return;
-
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-
-  const firstInput = document.getElementById(
-    "add_media_title",
-  ) as HTMLInputElement | null;
-  firstInput?.focus();
-}
-
-function closeAddMediaModal(): void {
-  const modal = document.getElementById("addMediaModal");
-  if (!modal) return;
-
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-function openAddCrewModal(): void {
-  const modal = document.getElementById("addCrewModal");
-  if (!modal) return;
-
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-
-  const firstInput = document.getElementById(
-    "add_crew_name",
-  ) as HTMLInputElement | null;
-  firstInput?.focus();
-}
-
-function closeAddCrewModal(): void {
-  const modal = document.getElementById("addCrewModal");
-  if (!modal) return;
-
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-function createDefaultRenderer(field: string) {
-  return (params: { value?: unknown; data?: GridRow }) => {
-    const value =
-      params.value ??
-      (params.data && typeof params.data === "object"
-        ? (params.data as Record<string, unknown>)[field]
-        : "");
-
-    return String(value ?? "");
+function getStoreFormValues(): StoreFormValues {
+  return {
+    store_name: getInputValue("store_name").trim(),
+    address: getInputValue("address").trim(),
+    address_2: getInputValue("address_2").trim(),
+    city: getInputValue("city").trim(),
+    state: getInputValue("state").trim(),
+    zip: getInputValue("zip").trim(),
+    phone_number: getInputValue("phone_number").trim(),
+    country: getInputValue("country").trim(),
+    quest_filter: getInputValue("quest_filter").trim(),
   };
 }
 
-function createWebsiteRenderer(field: string) {
-  return (params: { value?: unknown; data?: GridRow }) => {
-    const raw =
-      params.value ??
-      (params.data && typeof params.data === "object"
-        ? (params.data as Record<string, unknown>)[field]
-        : "");
+function getMediaFormValues(): MediaFormValues {
+  return {
+    title: getInputValue("media_title").trim(),
+    media_type: getInputValue("media_type").trim(),
+    format: getInputValue("media_format").trim(),
+    genre: getInputValue("media_genre").trim(),
+    platform: getInputValue("media_platform").trim(),
+    year: getInputValue("media_year").trim(),
+    company: getInputValue("media_company").trim(),
+    location: getInputValue("media_location").trim(),
+  };
+}
 
-    const text = String(raw ?? "").trim();
-    if (!text) return "";
+function getCrewFormValues(): CrewFormValues {
+  return {
+    name: getInputValue("crew_name").trim(),
+    role: getInputValue("crew_role").trim(),
+    department: getInputValue("crew_department").trim(),
+    email: getInputValue("crew_email").trim(),
+    phone: getInputValue("crew_phone").trim(),
+    city: getInputValue("crew_city").trim(),
+    state: getInputValue("crew_state").trim(),
+    country: getInputValue("crew_country").trim(),
+    company: getInputValue("crew_company").trim(),
+    project: getInputValue("crew_project").trim(),
+  };
+}
 
-    const link = document.createElement("a");
-    link.href = buildWebsiteUrl(text);
-    link.textContent = text;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.className = "store-link";
-    return link;
+function clearStoreForm(): void {
+  [
+    "store_name",
+    "address",
+    "address_2",
+    "city",
+    "state",
+    "zip",
+    "phone_number",
+    "country",
+    "quest_filter",
+  ].forEach((id) => setInputValue(id, ""));
+}
+
+function clearMediaForm(): void {
+  [
+    "media_title",
+    "media_type",
+    "media_format",
+    "media_genre",
+    "media_platform",
+    "media_year",
+    "media_company",
+    "media_location",
+  ].forEach((id) => setInputValue(id, ""));
+}
+
+function clearCrewForm(): void {
+  [
+    "crew_name",
+    "crew_role",
+    "crew_department",
+    "crew_email",
+    "crew_phone",
+    "crew_city",
+    "crew_state",
+    "crew_country",
+    "crew_company",
+    "crew_project",
+  ].forEach((id) => setInputValue(id, ""));
+}
+
+function getNewStoreFormValues(): NewStoreFormValues {
+  return {
+    store_name: getInputValue("add_store_name").trim(),
+    address: getInputValue("add_address").trim(),
+    address_2: getInputValue("add_address_2").trim(),
+    city: getInputValue("add_city").trim(),
+    state: getInputValue("add_state").trim(),
+    zip: getInputValue("add_zip").trim(),
+    phone_number: getInputValue("add_phone_number").trim(),
+    country: getInputValue("add_country").trim(),
+    quest: getInputValue("add_quest").trim(),
+    sunday_hours: buildDayHours("add_sun_open", "add_sun_close"),
+    monday_hours: buildDayHours("add_mon_open", "add_mon_close"),
+    tuesday_hours: buildDayHours("add_tue_open", "add_tue_close"),
+    wednesday_hours: buildDayHours("add_wed_open", "add_wed_close"),
+    thursday_hours: buildDayHours("add_thu_open", "add_thu_close"),
+    friday_hours: buildDayHours("add_fri_open", "add_fri_close"),
+    saturday_hours: buildDayHours("add_sat_open", "add_sat_close"),
+  };
+}
+
+function getNewMediaFormValues(): NewMediaFormValues {
+  return {
+    title: getInputValue("add_media_title").trim(),
+    media_type: getInputValue("add_media_type").trim(),
+    format: getInputValue("add_media_format").trim(),
+    genre: getInputValue("add_media_genre").trim(),
+    platform: getInputValue("add_media_platform").trim(),
+    year: getInputValue("add_media_year").trim(),
+    company: getInputValue("add_media_company").trim(),
+    location: getInputValue("add_media_location").trim(),
+    website: getInputValue("add_media_website").trim(),
+    notes: getInputValue("add_media_notes").trim(),
+  };
+}
+
+function getNewCrewFormValues(): NewCrewFormValues {
+  return {
+    name: getInputValue("add_crew_name").trim(),
+    role: getInputValue("add_crew_role").trim(),
+    department: getInputValue("add_crew_department").trim(),
+    email: getInputValue("add_crew_email").trim(),
+    phone: getInputValue("add_crew_phone").trim(),
+    city: getInputValue("add_crew_city").trim(),
+    state: getInputValue("add_crew_state").trim(),
+    country: getInputValue("add_crew_country").trim(),
+    company: getInputValue("add_crew_company").trim(),
+    project: getInputValue("add_crew_project").trim(),
+    website: getInputValue("add_crew_website").trim(),
+    notes: getInputValue("add_crew_notes").trim(),
+  };
+}
+
+function clearAddStoreForm(): void {
+  [
+    "add_store_name",
+    "add_address",
+    "add_address_2",
+    "add_city",
+    "add_state",
+    "add_zip",
+    "add_phone_number",
+    "add_country",
+    "add_quest",
+    "add_sun_open",
+    "add_sun_close",
+    "add_mon_open",
+    "add_mon_close",
+    "add_tue_open",
+    "add_tue_close",
+    "add_wed_open",
+    "add_wed_close",
+    "add_thu_open",
+    "add_thu_close",
+    "add_fri_open",
+    "add_fri_close",
+    "add_sat_open",
+    "add_sat_close",
+  ].forEach((id) => setInputValue(id, ""));
+}
+
+function clearAddMediaForm(): void {
+  [
+    "add_media_title",
+    "add_media_type",
+    "add_media_format",
+    "add_media_genre",
+    "add_media_platform",
+    "add_media_year",
+    "add_media_company",
+    "add_media_location",
+    "add_media_website",
+    "add_media_notes",
+  ].forEach((id) => setInputValue(id, ""));
+}
+
+function clearAddCrewForm(): void {
+  [
+    "add_crew_name",
+    "add_crew_role",
+    "add_crew_department",
+    "add_crew_email",
+    "add_crew_phone",
+    "add_crew_city",
+    "add_crew_state",
+    "add_crew_country",
+    "add_crew_company",
+    "add_crew_project",
+    "add_crew_website",
+    "add_crew_notes",
+  ].forEach((id) => setInputValue(id, ""));
+}
+
+function forceHideSection(section: HTMLElement | null): void {
+  if (!section) return;
+  section.style.display = "none";
+  section.classList.add("hidden");
+}
+
+function forceShowSection(section: HTMLElement | null): void {
+  if (!section) return;
+  section.style.display = "block";
+  section.classList.remove("hidden");
+}
+
+function createDefaultRenderer(
+  field: string,
+): (params: ICellRendererParams<GridRow>) => string {
+  return (params: ICellRendererParams<GridRow>): string => {
+    const row = params.data;
+    if (!row) return "";
+    const value = (row as Record<string, unknown>)[field] ?? params.value ?? "";
+    return String(value ?? "");
   };
 }
 
@@ -1177,113 +1552,88 @@ const storeColumnDefs: ColDef<GridRow>[] = [
   {
     headerName: "Store Name",
     field: "store_name",
-    sortable: true,
-    filter: true,
-    cellRenderer: (params: { value?: string; data?: GridRow }) => {
-      const data = (params.data ?? {}) as StoreRow;
-      const link = document.createElement("a");
-      link.href = "#";
-      link.textContent = params.value ?? data.store_name ?? "";
-      link.className = "store-link";
-
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-        openStoreDetailModal(data);
-      });
-
-      return link;
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
+      const row = params.data as StoreRow | undefined;
+      const name = row?.store_name ?? "";
+      return `<button class="grid-link-btn" data-store-detail="true">${escapeHtml(
+        String(name),
+      )}</button>`;
     },
   },
-  { headerName: "Address", field: "address", sortable: true, filter: true },
   {
-    headerName: "Address 2",
-    field: "address_2",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => getAddress2Value((params.data ?? {}) as StoreRow),
+    headerName: "Address",
+    valueGetter: (params: ValueGetterParams<GridRow>): string =>
+      formatAddress((params.data ?? {}) as StoreRow),
   },
-  { headerName: "City", field: "city", sortable: true, filter: true },
-  { headerName: "State", field: "state", sortable: true, filter: true },
-  { headerName: "Zip", field: "zip", sortable: true, filter: true },
-  { headerName: "Phone", field: "phone_number", sortable: true, filter: true },
-  { headerName: "Country", field: "country", sortable: true, filter: true },
+  {
+    headerName: "Phone",
+    field: "phone_number",
+    cellRenderer: createDefaultRenderer("phone_number"),
+  },
+  {
+    headerName: "Country",
+    field: "country",
+    cellRenderer: createDefaultRenderer("country"),
+  },
+  {
+    headerName: "Website",
+    field: "website",
+    cellRenderer: createDefaultRenderer("website"),
+  },
 ];
 
 const mediaColumnDefs: ColDef<GridRow>[] = [
   {
     headerName: "Title",
     field: "title",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => {
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
       const row = (params.data ?? {}) as MediaRow;
-      return row.title ?? row.media_title ?? "";
+      return String(row.title ?? row.media_title ?? "");
     },
   },
   {
-    headerName: "Type",
-    field: "type",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => {
+    headerName: "Media Type",
+    field: "media_type",
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
       const row = (params.data ?? {}) as MediaRow;
-      return row.type ?? row.media_type ?? "";
+      return String(row.media_type ?? row.type ?? "");
     },
   },
   {
     headerName: "Format",
     field: "format",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("format"),
   },
   {
     headerName: "Genre",
     field: "genre",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("genre"),
   },
   {
     headerName: "Platform",
     field: "platform",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("platform"),
   },
   {
     headerName: "Year",
     field: "year",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => {
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
       const row = (params.data ?? {}) as MediaRow;
-      return row.year ?? row.release_year ?? "";
+      return String(row.year ?? row.release_year ?? "");
     },
   },
   {
     headerName: "Company",
     field: "company",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => {
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
       const row = (params.data ?? {}) as MediaRow;
-      return row.company ?? row.studio ?? row.publisher ?? "";
+      return String(row.company ?? row.studio ?? row.publisher ?? "");
     },
   },
   {
     headerName: "Location",
     field: "location",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("location"),
-  },
-  {
-    headerName: "Website",
-    field: "website",
-    sortable: true,
-    filter: true,
-    cellRenderer: createWebsiteRenderer("website"),
   },
 ];
 
@@ -1291,117 +1641,100 @@ const crewColumnDefs: ColDef<GridRow>[] = [
   {
     headerName: "Name",
     field: "name",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => {
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
       const row = (params.data ?? {}) as CrewRow;
-      return (
+      return String(
         row.name ??
-        [row.first_name, row.last_name]
-          .filter((v) => String(v ?? "").trim() !== "")
-          .join(" ")
+          [row.first_name ?? "", row.last_name ?? ""].filter(Boolean).join(" "),
       );
     },
   },
   {
     headerName: "Role",
     field: "role",
-    sortable: true,
-    filter: true,
-    valueGetter: (params) => {
+    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
       const row = (params.data ?? {}) as CrewRow;
-      return row.role ?? row.title ?? "";
+      return String(row.role ?? row.title ?? "");
     },
   },
   {
     headerName: "Department",
     field: "department",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("department"),
   },
   {
     headerName: "Email",
     field: "email",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("email"),
   },
   {
     headerName: "Phone",
     field: "phone",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("phone"),
   },
   {
     headerName: "City",
     field: "city",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("city"),
   },
   {
     headerName: "State",
     field: "state",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("state"),
   },
   {
     headerName: "Country",
     field: "country",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("country"),
   },
   {
     headerName: "Company",
     field: "company",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("company"),
   },
   {
     headerName: "Project",
     field: "project",
-    sortable: true,
-    filter: true,
     cellRenderer: createDefaultRenderer("project"),
   },
 ];
 
-const gridElement = document.querySelector<HTMLDivElement>("#storeGrid");
-if (!gridElement) throw new Error("Grid element not found.");
+function initGrid(): void {
+  const gridElement = document.querySelector<HTMLDivElement>("#storeGrid");
+  if (!gridElement) throw new Error("Grid element not found.");
 
-const gridOptions: GridOptions<GridRow> = {
-  columnDefs: storeColumnDefs,
-  rowData: [],
-  pagination: true,
-  paginationPageSize: 25,
-  animateRows: true,
-  defaultColDef: {
-    resizable: true,
-    sortable: true,
-    filter: true,
-    flex: 1,
-    minWidth: 120,
-  },
-};
+  const gridOptions: GridOptions<GridRow> = {
+    columnDefs: storeColumnDefs,
+    rowData: [],
+    pagination: true,
+    paginationPageSize: 25,
+    animateRows: true,
+    defaultColDef: {
+      resizable: true,
+      sortable: true,
+      filter: true,
+      flex: 1,
+      minWidth: 120,
+    },
+    onCellClicked: (event: CellClickedEvent<GridRow>) => {
+      if (currentMode !== "stores") return;
+      const target = event.event?.target as HTMLElement | null;
+      if (target?.closest("[data-store-detail='true']")) {
+        openStoreDetailModal(event.data as StoreRow);
+      }
+    },
+  };
 
-let gridApi: GridApi<GridRow> | null = null;
-const createdGridApi = createGrid(gridElement, gridOptions);
+  const createdGridApi = createGrid(gridElement, gridOptions);
+  if (!createdGridApi) {
+    throw new Error("AG Grid failed to initialize.");
+  }
 
-if (!createdGridApi) {
-  throw new Error("AG Grid failed to initialize.");
+  gridApi = createdGridApi;
 }
 
-gridApi = createdGridApi;
-
 function setGridRows(rows: GridRow[]): void {
-  if (!gridApi) {
-    throw new Error("AG Grid API is not initialized.");
-  }
+  if (!gridApi) throw new Error("AG Grid API is not initialized.");
 
   const api = gridApi as GridApi<GridRow> & {
     setRowData?: (rowData: GridRow[]) => void;
@@ -1435,236 +1768,23 @@ function setGridColumns(columnDefs: ColDef<GridRow>[]): void {
 
   const api = gridApi as GridApi<GridRow> & {
     setGridOption?: (key: string, value: unknown) => void;
+    setColumnDefs?: (defs: ColDef<GridRow>[]) => void;
     sizeColumnsToFit?: () => void;
   };
 
   if (typeof api.setGridOption === "function") {
     api.setGridOption("columnDefs", columnDefs);
+  } else if (typeof api.setColumnDefs === "function") {
+    api.setColumnDefs(columnDefs);
   }
 
   requestAnimationFrame(() => {
     try {
       api.sizeColumnsToFit?.();
     } catch (error) {
-      console.warn("Grid column resize failed:", error);
+      console.warn("Column sizing failed:", error);
     }
   });
-}
-
-function setStatus(message: string): void {
-  const status = document.getElementById("status");
-  if (status) status.textContent = message;
-}
-
-function showToast(message: string): void {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
-
-  toast.textContent = message;
-  toast.classList.add("show");
-
-  if (toastTimer !== null) window.clearTimeout(toastTimer);
-
-  toastTimer = window.setTimeout(() => {
-    toast.classList.remove("show");
-  }, 5000);
-}
-
-function getStoreFormValues(): StoreFormValues {
-  return {
-    store_name: getInputValue("store_name"),
-    address: getInputValue("address"),
-    address_2: getInputValue("address_2"),
-    city: getInputValue("city"),
-    state: getInputValue("state"),
-    zip: getInputValue("zip"),
-    phone_number: getInputValue("phone_number"),
-    country: getInputValue("country"),
-    quest_filter: getInputValue("quest_filter"),
-  };
-}
-
-function getMediaFormValues(): MediaFormValues {
-  return {
-    title: getInputValue("media_title"),
-    media_type: getInputValue("media_type"),
-    format: getInputValue("media_format"),
-    genre: getInputValue("media_genre"),
-    platform: getInputValue("media_platform"),
-    year: getInputValue("media_year"),
-    company: getInputValue("media_company"),
-    location: getInputValue("media_location"),
-  };
-}
-
-function getCrewFormValues(): CrewFormValues {
-  return {
-    name: getInputValue("crew_name"),
-    role: getInputValue("crew_role"),
-    department: getInputValue("crew_department"),
-    email: getInputValue("crew_email"),
-    phone: getInputValue("crew_phone"),
-    city: getInputValue("crew_city"),
-    state: getInputValue("crew_state"),
-    country: getInputValue("crew_country"),
-    company: getInputValue("crew_company"),
-    project: getInputValue("crew_project"),
-  };
-}
-
-function getNewStoreFormValues(): NewStoreFormValues {
-  return {
-    store_name: getInputValue("add_store_name"),
-    address: getInputValue("add_address"),
-    address_2: getInputValue("add_address_2"),
-    city: getInputValue("add_city"),
-    state: getInputValue("add_state"),
-    zip: getInputValue("add_zip"),
-    phone_number: getInputValue("add_phone_number"),
-    country: getInputValue("add_country"),
-    quest: getInputValue("add_quest"),
-    sunday_hours: buildDayHours("add_sun_open", "add_sun_close"),
-    monday_hours: buildDayHours("add_mon_open", "add_mon_close"),
-    tuesday_hours: buildDayHours("add_tue_open", "add_tue_close"),
-    wednesday_hours: buildDayHours("add_wed_open", "add_wed_close"),
-    thursday_hours: buildDayHours("add_thu_open", "add_thu_close"),
-    friday_hours: buildDayHours("add_fri_open", "add_fri_close"),
-    saturday_hours: buildDayHours("add_sat_open", "add_sat_close"),
-  };
-}
-
-function getNewMediaFormValues(): NewMediaFormValues {
-  return {
-    title: getInputValue("add_media_title"),
-    media_type: getInputValue("add_media_type"),
-    format: getInputValue("add_media_format"),
-    genre: getInputValue("add_media_genre"),
-    platform: getInputValue("add_media_platform"),
-    year: getInputValue("add_media_year"),
-    company: getInputValue("add_media_company"),
-    location: getInputValue("add_media_location"),
-    website: getInputValue("add_media_website"),
-    notes: getInputValue("add_media_notes"),
-  };
-}
-
-function getNewCrewFormValues(): NewCrewFormValues {
-  return {
-    name: getInputValue("add_crew_name"),
-    role: getInputValue("add_crew_role"),
-    department: getInputValue("add_crew_department"),
-    email: getInputValue("add_crew_email"),
-    phone: getInputValue("add_crew_phone"),
-    city: getInputValue("add_crew_city"),
-    state: getInputValue("add_crew_state"),
-    country: getInputValue("add_crew_country"),
-    company: getInputValue("add_crew_company"),
-    project: getInputValue("add_crew_project"),
-    website: getInputValue("add_crew_website"),
-    notes: getInputValue("add_crew_notes"),
-  };
-}
-
-const STORE_SEARCH_FIELD_IDS = [
-  "store_name",
-  "address",
-  "address_2",
-  "city",
-  "state",
-  "zip",
-  "phone_number",
-  "country",
-  "quest_filter",
-];
-
-const MEDIA_SEARCH_FIELD_IDS = [
-  "media_title",
-  "media_type",
-  "media_format",
-  "media_genre",
-  "media_platform",
-  "media_year",
-  "media_company",
-  "media_location",
-];
-
-const CREW_SEARCH_FIELD_IDS = [
-  "crew_name",
-  "crew_role",
-  "crew_department",
-  "crew_email",
-  "crew_phone",
-  "crew_city",
-  "crew_state",
-  "crew_country",
-  "crew_company",
-  "crew_project",
-];
-
-const ADD_STORE_FIELD_IDS = [
-  "add_store_name",
-  "add_address",
-  "add_address_2",
-  "add_city",
-  "add_state",
-  "add_zip",
-  "add_phone_number",
-  "add_country",
-  "add_quest",
-  "add_sun_open",
-  "add_sun_close",
-  "add_mon_open",
-  "add_mon_close",
-  "add_tue_open",
-  "add_tue_close",
-  "add_wed_open",
-  "add_wed_close",
-  "add_thu_open",
-  "add_thu_close",
-  "add_fri_open",
-  "add_fri_close",
-  "add_sat_open",
-  "add_sat_close",
-];
-
-const ADD_MEDIA_FIELD_IDS = [
-  "add_media_title",
-  "add_media_type",
-  "add_media_format",
-  "add_media_genre",
-  "add_media_platform",
-  "add_media_year",
-  "add_media_company",
-  "add_media_location",
-  "add_media_website",
-  "add_media_notes",
-];
-
-const ADD_CREW_FIELD_IDS = [
-  "add_crew_name",
-  "add_crew_role",
-  "add_crew_department",
-  "add_crew_email",
-  "add_crew_phone",
-  "add_crew_city",
-  "add_crew_state",
-  "add_crew_country",
-  "add_crew_company",
-  "add_crew_project",
-  "add_crew_website",
-  "add_crew_notes",
-];
-
-function forceHideSection(section: HTMLElement | null): void {
-  if (!section) return;
-  section.classList.add("hidden");
-  section.style.display = "none";
-}
-
-function forceShowSection(section: HTMLElement | null): void {
-  if (!section) return;
-  section.classList.remove("hidden");
-  section.style.display = "block";
 }
 
 function showSearchSection(mode: SearchMode): void {
@@ -1728,7 +1848,7 @@ function showSearchSection(mode: SearchMode): void {
 }
 
 async function fetchStores(): Promise<void> {
-  setStatus("Loading stores...");
+  setStatus("Loading stores.");
 
   try {
     const params = new URLSearchParams();
@@ -1740,45 +1860,33 @@ async function fetchStores(): Promise<void> {
 
     const queryString = params.toString();
     const url = queryString
-      ? `${API_BASE}/api/stores?${queryString}`
-      : `${API_BASE}/api/stores`;
+      ? apiUrl(`/api/stores?${queryString}`)
+      : apiUrl("/api/stores");
 
-    const response = await fetch(url, {
+    const parsed = await apiRequest<unknown>(url, {
       method: "GET",
-      credentials: "omit",
-      headers: {
-        Accept: "application/json",
-      },
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const parsed = (await response.json()) as unknown;
 
     if (!Array.isArray(parsed)) {
       throw new Error("API response was not an array.");
     }
 
-    const data = parsed.map((row) => normalizeStoreRow(row as StoreRow));
-
-    setGridColumns(storeColumnDefs);
-    setGridRows(data);
-    setStatus(`${data.length} store(s) found.`);
+    const rows = parsed.map((row) => normalizeStoreRow(row as StoreRow));
+    setGridRows(rows);
+    setStatus(`Loaded ${rows.length} store${rows.length === 1 ? "" : "s"}.`);
   } catch (error) {
     console.error("fetchStores failed:", error);
     setStatus(
       error instanceof Error
-        ? `Error loading store data: ${error.message}`
-        : "Error loading store data.",
+        ? `Error loading stores: ${error.message}`
+        : "Error loading stores.",
     );
+    setGridRows([]);
   }
 }
 
 async function fetchMedia(): Promise<void> {
-  setStatus("Loading media...");
+  setStatus("Loading media.");
 
   try {
     const params = new URLSearchParams();
@@ -1790,45 +1898,35 @@ async function fetchMedia(): Promise<void> {
 
     const queryString = params.toString();
     const url = queryString
-      ? `${API_BASE}/api/media?${queryString}`
-      : `${API_BASE}/api/media`;
+      ? apiUrl(`/api/media?${queryString}`)
+      : apiUrl("/api/media");
 
-    const response = await fetch(url, {
+    const parsed = await apiRequest<unknown>(url, {
       method: "GET",
-      credentials: "omit",
-      headers: {
-        Accept: "application/json",
-      },
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const parsed = (await response.json()) as unknown;
 
     if (!Array.isArray(parsed)) {
       throw new Error("API response was not an array.");
     }
 
-    const data = parsed.map((row) => normalizeMediaRow(row as MediaRow));
-
-    setGridColumns(mediaColumnDefs);
-    setGridRows(data);
-    setStatus(`${data.length} media record(s) found.`);
+    const rows = parsed.map((row) => normalizeMediaRow(row as MediaRow));
+    setGridRows(rows);
+    setStatus(
+      `Loaded ${rows.length} media item${rows.length === 1 ? "" : "s"}.`,
+    );
   } catch (error) {
     console.error("fetchMedia failed:", error);
     setStatus(
       error instanceof Error
-        ? `Error loading media data: ${error.message}`
-        : "Error loading media data.",
+        ? `Error loading media: ${error.message}`
+        : "Error loading media.",
     );
+    setGridRows([]);
   }
 }
 
 async function fetchCrew(): Promise<void> {
-  setStatus("Loading crew...");
+  setStatus("Loading crew.");
 
   try {
     const params = new URLSearchParams();
@@ -1840,67 +1938,46 @@ async function fetchCrew(): Promise<void> {
 
     const queryString = params.toString();
     const url = queryString
-      ? `${API_BASE}/api/crew?${queryString}`
-      : `${API_BASE}/api/crew`;
+      ? apiUrl(`/api/crew?${queryString}`)
+      : apiUrl("/api/crew");
 
-    const response = await fetch(url, {
+    const parsed = await apiRequest<unknown>(url, {
       method: "GET",
-      credentials: "omit",
-      headers: {
-        Accept: "application/json",
-      },
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const parsed = (await response.json()) as unknown;
 
     if (!Array.isArray(parsed)) {
       throw new Error("API response was not an array.");
     }
 
-    const data = parsed.map((row) => normalizeCrewRow(row as CrewRow));
-
-    setGridColumns(crewColumnDefs);
-    setGridRows(data);
-    setStatus(`${data.length} crew record(s) found.`);
+    const rows = parsed.map((row) => normalizeCrewRow(row as CrewRow));
+    setGridRows(rows);
+    setStatus(
+      `Loaded ${rows.length} crew member${rows.length === 1 ? "" : "s"}.`,
+    );
   } catch (error) {
     console.error("fetchCrew failed:", error);
     setStatus(
       error instanceof Error
-        ? `Error loading crew data: ${error.message}`
-        : "Error loading crew data.",
+        ? `Error loading crew: ${error.message}`
+        : "Error loading crew.",
     );
+    setGridRows([]);
   }
 }
 
-function clearStoreForm(): void {
-  STORE_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+async function loadAllStores(): Promise<void> {
+  clearStoreForm();
+  await fetchStores();
 }
 
-function clearMediaForm(): void {
-  MEDIA_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+async function loadAllMedia(): Promise<void> {
+  clearMediaForm();
+  await fetchMedia();
 }
 
-function clearCrewForm(): void {
-  CREW_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
-}
-
-function clearAddStoreForm(): void {
-  ADD_STORE_FIELD_IDS.forEach((id) => setInputValue(id, ""));
-  setInputValue("add_country", "");
-  setInputValue("add_quest", "");
-}
-
-function clearAddMediaForm(): void {
-  ADD_MEDIA_FIELD_IDS.forEach((id) => setInputValue(id, ""));
-}
-
-function clearAddCrewForm(): void {
-  ADD_CREW_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+async function loadAllCrew(): Promise<void> {
+  clearCrewForm();
+  await fetchCrew();
 }
 
 async function addStore(): Promise<void> {
@@ -1912,46 +1989,21 @@ async function addStore(): Promise<void> {
     !values.city ||
     !values.state ||
     !values.zip ||
-    !values.phone_number ||
     !values.country
   ) {
-    setStatus("Please fill out all Join the Quest fields.");
+    setStatus("Please complete the required store fields.");
     return;
-  }
-
-  let nes = false;
-  let snes = false;
-  let n64 = false;
-
-  switch (values.quest) {
-    case "nes":
-      nes = true;
-      break;
-    case "snes":
-      snes = true;
-      break;
-    case "n64":
-      n64 = true;
-      break;
-    case "all":
-      nes = true;
-      snes = true;
-      n64 = true;
-      break;
   }
 
   const payload = {
     store_name: values.store_name,
     address: values.address,
-    address_2: values.address_2 || "",
+    address_2: values.address_2,
     city: values.city,
     state: values.state,
     zip: values.zip,
     phone_number: values.phone_number,
     country: values.country,
-    nes_quest: nes,
-    snes_quest: snes,
-    n64_quest: n64,
     sunday: values.sunday_hours,
     monday: values.monday_hours,
     tuesday: values.tuesday_hours,
@@ -1959,48 +2011,33 @@ async function addStore(): Promise<void> {
     thursday: values.thursday_hours,
     friday: values.friday_hours,
     saturday: values.saturday_hours,
+    nes_quest: values.quest === "nes" || values.quest === "all",
+    snes_quest: values.quest === "snes" || values.quest === "all",
+    n64_quest: values.quest === "n64" || values.quest === "all",
   };
 
   try {
-    setStatus("Saving store...");
-
-    const res = await fetch(`${API_BASE}/api/stores`, {
+    setStatus("Saving store.");
+    await apiRequest(apiUrl("/api/stores"), {
       method: "POST",
-      credentials: "omit",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
       body: JSON.stringify(payload),
     });
 
-    const rawText = await res.text();
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${rawText}`);
-    }
-
-    const result = rawText ? JSON.parse(rawText) : {};
-
     clearAddStoreForm();
-    closeAddStoreModal();
+    closeModal("addStoreModal");
     showToast("Added to the Quest 🚀");
-    setStatus(
-      result?.store_id !== undefined
-        ? `Store added successfully. Store ID: ${result.store_id}`
-        : "Store added successfully.",
-    );
+    setStatus("Store added successfully.");
 
     if (currentMode !== "stores") {
       showSearchSection("stores");
     }
 
     await fetchStores();
-  } catch (err) {
-    console.error("addStore failed:", err);
+  } catch (error) {
+    console.error("addStore failed:", error);
     setStatus(
-      err instanceof Error
-        ? `Error adding store: ${err.message}`
+      error instanceof Error
+        ? `Error adding store: ${error.message}`
         : "Error adding store.",
     );
   }
@@ -2028,26 +2065,15 @@ async function addMedia(): Promise<void> {
   };
 
   try {
-    setStatus("Saving media...");
+    setStatus("Saving media.");
 
-    const res = await fetch(`${API_BASE}/api/media`, {
+    await apiRequest(apiUrl("/api/media"), {
       method: "POST",
-      credentials: "omit",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
       body: JSON.stringify(payload),
     });
 
-    const rawText = await res.text();
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${rawText}`);
-    }
-
     clearAddMediaForm();
-    closeAddMediaModal();
+    closeModal("addMediaModal");
     showToast("Media added 🎬");
     setStatus("Media added successfully.");
 
@@ -2056,11 +2082,11 @@ async function addMedia(): Promise<void> {
     }
 
     await fetchMedia();
-  } catch (err) {
-    console.error("addMedia failed:", err);
+  } catch (error) {
+    console.error("addMedia failed:", error);
     setStatus(
-      err instanceof Error
-        ? `Error adding media: ${err.message}`
+      error instanceof Error
+        ? `Error adding media: ${error.message}`
         : "Error adding media.",
     );
   }
@@ -2090,26 +2116,15 @@ async function addCrew(): Promise<void> {
   };
 
   try {
-    setStatus("Saving crew...");
+    setStatus("Saving crew.");
 
-    const res = await fetch(`${API_BASE}/api/crew`, {
+    await apiRequest(apiUrl("/api/crew"), {
       method: "POST",
-      credentials: "omit",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
       body: JSON.stringify(payload),
     });
 
-    const rawText = await res.text();
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${rawText}`);
-    }
-
     clearAddCrewForm();
-    closeAddCrewModal();
+    closeModal("addCrewModal");
     showToast("Crew added 🎥");
     setStatus("Crew added successfully.");
 
@@ -2118,11 +2133,11 @@ async function addCrew(): Promise<void> {
     }
 
     await fetchCrew();
-  } catch (err) {
-    console.error("addCrew failed:", err);
+  } catch (error) {
+    console.error("addCrew failed:", error);
     setStatus(
-      err instanceof Error
-        ? `Error adding crew: ${err.message}`
+      error instanceof Error
+        ? `Error adding crew: ${error.message}`
         : "Error adding crew.",
     );
   }
@@ -2138,254 +2153,236 @@ function attachAutoSearch(
   });
 }
 
-document.getElementById("modeStoresBtn")?.addEventListener("click", () => {
-  playClick();
-  showSearchSection("stores");
-});
+function bindEvents(): void {
+  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    try {
+      await apiRequest(apiUrl("/api/auth/logout"), { method: "POST" });
+      currentUser = null;
+      renderAuthScreen();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Logout failed.");
+    }
+  });
 
-document.getElementById("modeMediaBtn")?.addEventListener("click", () => {
-  playClick();
-  showSearchSection("media");
-});
-
-document.getElementById("modeCrewBtn")?.addEventListener("click", () => {
-  playClick();
-  showSearchSection("crew");
-});
-
-document.getElementById("searchBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  void fetchStores();
-});
-
-document.getElementById("clearBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  clearStoreForm();
-  setGridRows([]);
-  setStatus("Store filters cleared.");
-});
-
-document.getElementById("loadAllBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  clearStoreForm();
-  void fetchStores();
-});
-
-document.getElementById("mediaSearchBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  void fetchMedia();
-});
-
-document.getElementById("mediaClearBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  clearMediaForm();
-  setGridRows([]);
-  setStatus("Media filters cleared.");
-});
-
-document.getElementById("mediaLoadAllBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  clearMediaForm();
-  void fetchMedia();
-});
-
-document.getElementById("crewSearchBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  void fetchCrew();
-});
-
-document.getElementById("crewClearBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  clearCrewForm();
-  setGridRows([]);
-  setStatus("Crew filters cleared.");
-});
-
-document.getElementById("crewLoadAllBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  clearCrewForm();
-  void fetchCrew();
-});
-
-document.getElementById("openModalBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  openAddStoreModal();
-});
-
-document.getElementById("openAddMediaBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  openAddMediaModal();
-});
-
-document.getElementById("openAddCrewBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  openAddCrewModal();
-});
-
-document.getElementById("submitAddStoreBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  void addStore();
-});
-
-document.getElementById("submitAddMediaBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  void addMedia();
-});
-
-document.getElementById("submitAddCrewBtn")?.addEventListener("click", () => {
-  startMusic();
-  playClick();
-  void addCrew();
-});
-
-document.getElementById("cancelAddStoreBtn")?.addEventListener("click", () => {
-  playClick();
-  closeAddStoreModal();
-});
-
-document.getElementById("closeAddStoreBtn")?.addEventListener("click", () => {
-  playClick();
-  closeAddStoreModal();
-});
-
-document.getElementById("cancelAddMediaBtn")?.addEventListener("click", () => {
-  playClick();
-  closeAddMediaModal();
-});
-
-document.getElementById("closeAddMediaBtn")?.addEventListener("click", () => {
-  playClick();
-  closeAddMediaModal();
-});
-
-document.getElementById("cancelAddCrewBtn")?.addEventListener("click", () => {
-  playClick();
-  closeAddCrewModal();
-});
-
-document.getElementById("closeAddCrewBtn")?.addEventListener("click", () => {
-  playClick();
-  closeAddCrewModal();
-});
-
-document
-  .getElementById("closeStoreDetailBtn")
-  ?.addEventListener("click", () => {
+  document.getElementById("musicToggleBtn")?.addEventListener("click", () => {
     playClick();
-    closeStoreDetailModal();
+    toggleMusic();
   });
 
-document.getElementById("addStoreModal")?.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) closeAddStoreModal();
-});
-
-document.getElementById("addMediaModal")?.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) closeAddMediaModal();
-});
-
-document.getElementById("addCrewModal")?.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) closeAddCrewModal();
-});
-
-document
-  .getElementById("storeDetailModal")
-  ?.addEventListener("click", (event) => {
-    if (event.target === event.currentTarget) closeStoreDetailModal();
+  const volumeSlider = document.getElementById(
+    "volumeSlider",
+  ) as HTMLInputElement | null;
+  volumeSlider?.addEventListener("input", () => {
+    const value = Number(volumeSlider.value) / 100;
+    bgMusic.volume = value;
+    clickSound.volume = Math.min(1, value + 0.25);
+    updateVolumeLabel(value);
   });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    closeAddStoreModal();
-    closeAddMediaModal();
-    closeAddCrewModal();
-    closeStoreDetailModal();
-  }
-});
+  document.getElementById("modeStoresBtn")?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("stores");
+  });
 
-document.getElementById("musicToggleBtn")?.addEventListener("click", () => {
-  playClick();
-  toggleMusic();
-});
+  document.getElementById("modeMediaBtn")?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("media");
+  });
 
-(
-  document.getElementById("volumeSlider") as HTMLInputElement | null
-)?.addEventListener("input", (e) => {
-  const target = e.target as HTMLInputElement;
-  const volume = Number(target.value) / 100;
+  document.getElementById("modeCrewBtn")?.addEventListener("click", () => {
+    playClick();
+    showSearchSection("crew");
+  });
 
-  bgMusic.volume = volume;
-  updateVolumeLabel(volume);
+  document.getElementById("searchBtn")?.addEventListener("click", () => {
+    playClick();
+    void fetchStores();
+  });
+  document.getElementById("clearBtn")?.addEventListener("click", () => {
+    playClick();
+    clearStoreForm();
+    setGridRows([]);
+    setStatus("Store filters cleared.");
+  });
+  document.getElementById("loadAllBtn")?.addEventListener("click", () => {
+    playClick();
+    void loadAllStores();
+  });
 
-  if (volume === 0) {
-    bgMusic.pause();
-    musicMuted = true;
-  } else {
-    musicMuted = false;
-  }
+  document.getElementById("mediaSearchBtn")?.addEventListener("click", () => {
+    playClick();
+    void fetchMedia();
+  });
+  document.getElementById("mediaClearBtn")?.addEventListener("click", () => {
+    playClick();
+    clearMediaForm();
+    setGridRows([]);
+    setStatus("Media filters cleared.");
+  });
+  document.getElementById("mediaLoadAllBtn")?.addEventListener("click", () => {
+    playClick();
+    void loadAllMedia();
+  });
 
-  updateMusicButton();
-});
+  document.getElementById("crewSearchBtn")?.addEventListener("click", () => {
+    playClick();
+    void fetchCrew();
+  });
+  document.getElementById("crewClearBtn")?.addEventListener("click", () => {
+    playClick();
+    clearCrewForm();
+    setGridRows([]);
+    setStatus("Crew filters cleared.");
+  });
+  document.getElementById("crewLoadAllBtn")?.addEventListener("click", () => {
+    playClick();
+    void loadAllCrew();
+  });
 
-// Store autosearch
-attachAutoSearch("store_name", fetchStores);
-attachAutoSearch("address", fetchStores);
-attachAutoSearch("address_2", fetchStores);
-attachAutoSearch("city", fetchStores);
-attachAutoSearch("state", fetchStores);
-attachAutoSearch("zip", fetchStores);
-attachAutoSearch("phone_number", fetchStores);
-attachAutoSearch("country", fetchStores, "change");
-attachAutoSearch("quest_filter", fetchStores, "change");
+  document.getElementById("openModalBtn")?.addEventListener("click", () => {
+    playClick();
+    openModal("addStoreModal");
+  });
+  document
+    .getElementById("closeAddStoreBtn")
+    ?.addEventListener("click", () => closeModal("addStoreModal"));
+  document
+    .getElementById("cancelAddStoreBtn")
+    ?.addEventListener("click", () => closeModal("addStoreModal"));
+  document
+    .getElementById("submitAddStoreBtn")
+    ?.addEventListener("click", () => {
+      playClick();
+      void addStore();
+    });
 
-// Media autosearch
-attachAutoSearch("media_title", fetchMedia);
-attachAutoSearch("media_type", fetchMedia);
-attachAutoSearch("media_format", fetchMedia);
-attachAutoSearch("media_genre", fetchMedia);
-attachAutoSearch("media_platform", fetchMedia);
-attachAutoSearch("media_year", fetchMedia);
-attachAutoSearch("media_company", fetchMedia);
-attachAutoSearch("media_location", fetchMedia);
+  document.getElementById("openAddMediaBtn")?.addEventListener("click", () => {
+    playClick();
+    openModal("addMediaModal");
+  });
+  document
+    .getElementById("closeAddMediaBtn")
+    ?.addEventListener("click", () => closeModal("addMediaModal"));
+  document
+    .getElementById("cancelAddMediaBtn")
+    ?.addEventListener("click", () => closeModal("addMediaModal"));
+  document
+    .getElementById("submitAddMediaBtn")
+    ?.addEventListener("click", () => {
+      playClick();
+      void addMedia();
+    });
 
-// Crew autosearch
-attachAutoSearch("crew_name", fetchCrew);
-attachAutoSearch("crew_role", fetchCrew);
-attachAutoSearch("crew_department", fetchCrew);
-attachAutoSearch("crew_email", fetchCrew);
-attachAutoSearch("crew_phone", fetchCrew);
-attachAutoSearch("crew_city", fetchCrew);
-attachAutoSearch("crew_state", fetchCrew);
-attachAutoSearch("crew_country", fetchCrew);
-attachAutoSearch("crew_company", fetchCrew);
-attachAutoSearch("crew_project", fetchCrew);
+  document.getElementById("openAddCrewBtn")?.addEventListener("click", () => {
+    playClick();
+    openModal("addCrewModal");
+  });
+  document
+    .getElementById("closeAddCrewBtn")
+    ?.addEventListener("click", () => closeModal("addCrewModal"));
+  document
+    .getElementById("cancelAddCrewBtn")
+    ?.addEventListener("click", () => closeModal("addCrewModal"));
+  document.getElementById("submitAddCrewBtn")?.addEventListener("click", () => {
+    playClick();
+    void addCrew();
+  });
 
-function bootstrap(): void {
+  document
+    .getElementById("closeStoreDetailBtn")
+    ?.addEventListener("click", () => closeStoreDetailModal());
+
+  document.querySelectorAll(".modal-overlay").forEach((modal) => {
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        (modal as HTMLElement).classList.add("hidden");
+        (modal as HTMLElement).setAttribute("aria-hidden", "true");
+      }
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      document.querySelectorAll(".modal-overlay").forEach((modal) => {
+        (modal as HTMLElement).classList.add("hidden");
+        (modal as HTMLElement).setAttribute("aria-hidden", "true");
+      });
+    }
+  });
+
+  [
+    "store_name",
+    "address",
+    "address_2",
+    "city",
+    "state",
+    "zip",
+    "phone_number",
+  ].forEach((id) => attachAutoSearch(id, fetchStores));
+
+  attachAutoSearch("country", fetchStores, "change");
+  attachAutoSearch("quest_filter", fetchStores, "change");
+
+  [
+    "media_title",
+    "media_type",
+    "media_format",
+    "media_genre",
+    "media_platform",
+    "media_year",
+    "media_company",
+    "media_location",
+  ].forEach((id) => attachAutoSearch(id, fetchMedia));
+
+  [
+    "crew_name",
+    "crew_role",
+    "crew_department",
+    "crew_email",
+    "crew_phone",
+    "crew_city",
+    "crew_state",
+    "crew_country",
+    "crew_company",
+    "crew_project",
+  ].forEach((id) => attachAutoSearch(id, fetchCrew));
+}
+
+function initializeAppAfterRender(): void {
   ensureGridIsVisible();
+  initGrid();
+  bindEvents();
   updateMusicButton();
   updateVolumeLabel(bgMusic.volume);
   showSearchSection("stores");
 
-  requestAnimationFrame(() => {
-    void fetchStores();
-  });
+  document.addEventListener(
+    "click",
+    () => {
+      startMusic();
+    },
+    { once: true },
+  );
+
+  void loadAllStores();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", bootstrap);
-} else {
-  bootstrap();
+async function boot(): Promise<void> {
+  renderLoading();
+
+  try {
+    const me = await apiRequest<MeResponse>(apiUrl("/api/auth/me"));
+    if ("ok" in me && me.ok) {
+      currentUser = me.user;
+      renderAppShell(me.user);
+      initializeAppAfterRender();
+      return;
+    }
+  } catch {
+    // not logged in
+  }
+
+  renderAuthScreen();
 }
+
+void boot();
