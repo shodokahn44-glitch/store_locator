@@ -247,6 +247,34 @@ interface NewStoreFormValues {
   saturday_hours: string;
 }
 
+interface NewMediaFormValues {
+  title: string;
+  media_type: string;
+  format: string;
+  genre: string;
+  platform: string;
+  year: string;
+  company: string;
+  location: string;
+  website: string;
+  notes: string;
+}
+
+interface NewCrewFormValues {
+  name: string;
+  role: string;
+  department: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  country: string;
+  company: string;
+  project: string;
+  website: string;
+  notes: string;
+}
+
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
   throw new Error("App element not found.");
@@ -354,8 +382,6 @@ app.innerHTML = `
             <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
             <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
             <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
-            <button id="goToMediaFromStoreBtn" class="retro-btn secondary" type="button">Go to Media Search</button>
-            <button id="goToCrewFromStoreBtn" class="retro-btn secondary" type="button">Go to Crew Search</button>
           </div>
         </div>
 
@@ -406,8 +432,7 @@ app.innerHTML = `
             <button id="mediaSearchBtn" class="retro-btn" type="button">Search Media</button>
             <button id="mediaClearBtn" class="retro-btn secondary" type="button">Clear</button>
             <button id="mediaLoadAllBtn" class="retro-btn accent" type="button">Load All Media</button>
-            <button id="backToStoresFromMediaBtn" class="retro-btn secondary" type="button">Back to Store Info</button>
-            <button id="goToCrewFromMediaBtn" class="retro-btn secondary" type="button">Go to Crew Search</button>
+            <button id="openAddMediaBtn" class="retro-btn success" type="button">Add Media</button>
           </div>
         </div>
 
@@ -468,8 +493,7 @@ app.innerHTML = `
             <button id="crewSearchBtn" class="retro-btn" type="button">Search Crew</button>
             <button id="crewClearBtn" class="retro-btn secondary" type="button">Clear</button>
             <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
-            <button id="backToStoresFromCrewBtn" class="retro-btn secondary" type="button">Back to Store Info</button>
-            <button id="goToMediaFromCrewBtn" class="retro-btn secondary" type="button">Go to Media Search</button>
+            <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
           </div>
         </div>
       </div>
@@ -588,6 +612,128 @@ app.innerHTML = `
         <div class="button-row modal-actions">
           <button id="submitAddStoreBtn" class="retro-btn success" type="button">Add to Quest</button>
           <button id="cancelAddStoreBtn" class="retro-btn secondary" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="addMediaModal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal-card retro-panel">
+        <div class="modal-header">
+          <h2>Add Media</h2>
+          <button id="closeAddMediaBtn" class="modal-close-btn" type="button">×</button>
+        </div>
+
+        <div class="search-grid modal-grid">
+          <div>
+            <label for="add_media_title">Title</label>
+            <input id="add_media_title" type="text" />
+          </div>
+          <div>
+            <label for="add_media_type">Media Type</label>
+            <input id="add_media_type" type="text" />
+          </div>
+          <div>
+            <label for="add_media_format">Format</label>
+            <input id="add_media_format" type="text" />
+          </div>
+          <div>
+            <label for="add_media_genre">Genre</label>
+            <input id="add_media_genre" type="text" />
+          </div>
+          <div>
+            <label for="add_media_platform">Platform</label>
+            <input id="add_media_platform" type="text" />
+          </div>
+          <div>
+            <label for="add_media_year">Year</label>
+            <input id="add_media_year" type="text" />
+          </div>
+          <div>
+            <label for="add_media_company">Company</label>
+            <input id="add_media_company" type="text" />
+          </div>
+          <div>
+            <label for="add_media_location">Location</label>
+            <input id="add_media_location" type="text" />
+          </div>
+          <div>
+            <label for="add_media_website">Website</label>
+            <input id="add_media_website" type="text" />
+          </div>
+          <div>
+            <label for="add_media_notes">Notes</label>
+            <input id="add_media_notes" type="text" />
+          </div>
+        </div>
+
+        <div class="button-row modal-actions">
+          <button id="submitAddMediaBtn" class="retro-btn success" type="button">Save Media</button>
+          <button id="cancelAddMediaBtn" class="retro-btn secondary" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="addCrewModal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal-card retro-panel">
+        <div class="modal-header">
+          <h2>Add Crew</h2>
+          <button id="closeAddCrewBtn" class="modal-close-btn" type="button">×</button>
+        </div>
+
+        <div class="search-grid modal-grid">
+          <div>
+            <label for="add_crew_name">Name</label>
+            <input id="add_crew_name" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_role">Role / Title</label>
+            <input id="add_crew_role" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_department">Department</label>
+            <input id="add_crew_department" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_email">Email</label>
+            <input id="add_crew_email" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_phone">Phone</label>
+            <input id="add_crew_phone" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_city">City</label>
+            <input id="add_crew_city" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_state">State / Province</label>
+            <input id="add_crew_state" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_country">Country</label>
+            <input id="add_crew_country" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_company">Company</label>
+            <input id="add_crew_company" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_project">Project</label>
+            <input id="add_crew_project" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_website">Website</label>
+            <input id="add_crew_website" type="text" />
+          </div>
+          <div>
+            <label for="add_crew_notes">Notes</label>
+            <input id="add_crew_notes" type="text" />
+          </div>
+        </div>
+
+        <div class="button-row modal-actions">
+          <button id="submitAddCrewBtn" class="retro-btn success" type="button">Save Crew</button>
+          <button id="cancelAddCrewBtn" class="retro-btn secondary" type="button">Cancel</button>
         </div>
       </div>
     </div>
@@ -931,6 +1077,69 @@ function closeStoreDetailModal(): void {
   modal.setAttribute("aria-hidden", "true");
 }
 
+function openAddStoreModal(): void {
+  const modal = document.getElementById("addStoreModal");
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+
+  const firstInput = document.getElementById(
+    "add_store_name",
+  ) as HTMLInputElement | null;
+  firstInput?.focus();
+}
+
+function closeAddStoreModal(): void {
+  const modal = document.getElementById("addStoreModal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function openAddMediaModal(): void {
+  const modal = document.getElementById("addMediaModal");
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+
+  const firstInput = document.getElementById(
+    "add_media_title",
+  ) as HTMLInputElement | null;
+  firstInput?.focus();
+}
+
+function closeAddMediaModal(): void {
+  const modal = document.getElementById("addMediaModal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function openAddCrewModal(): void {
+  const modal = document.getElementById("addCrewModal");
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+
+  const firstInput = document.getElementById(
+    "add_crew_name",
+  ) as HTMLInputElement | null;
+  firstInput?.focus();
+}
+
+function closeAddCrewModal(): void {
+  const modal = document.getElementById("addCrewModal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
 function createDefaultRenderer(field: string) {
   return (params: { value?: unknown; data?: GridRow }) => {
     const value =
@@ -1261,27 +1470,6 @@ function showToast(message: string): void {
   }, 5000);
 }
 
-function openAddStoreModal(): void {
-  const modal = document.getElementById("addStoreModal");
-  if (!modal) return;
-
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-
-  const firstInput = document.getElementById(
-    "add_store_name",
-  ) as HTMLInputElement | null;
-  firstInput?.focus();
-}
-
-function closeAddStoreModal(): void {
-  const modal = document.getElementById("addStoreModal");
-  if (!modal) return;
-
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
-}
-
 function getStoreFormValues(): StoreFormValues {
   return {
     store_name: getInputValue("store_name"),
@@ -1345,6 +1533,38 @@ function getNewStoreFormValues(): NewStoreFormValues {
   };
 }
 
+function getNewMediaFormValues(): NewMediaFormValues {
+  return {
+    title: getInputValue("add_media_title"),
+    media_type: getInputValue("add_media_type"),
+    format: getInputValue("add_media_format"),
+    genre: getInputValue("add_media_genre"),
+    platform: getInputValue("add_media_platform"),
+    year: getInputValue("add_media_year"),
+    company: getInputValue("add_media_company"),
+    location: getInputValue("add_media_location"),
+    website: getInputValue("add_media_website"),
+    notes: getInputValue("add_media_notes"),
+  };
+}
+
+function getNewCrewFormValues(): NewCrewFormValues {
+  return {
+    name: getInputValue("add_crew_name"),
+    role: getInputValue("add_crew_role"),
+    department: getInputValue("add_crew_department"),
+    email: getInputValue("add_crew_email"),
+    phone: getInputValue("add_crew_phone"),
+    city: getInputValue("add_crew_city"),
+    state: getInputValue("add_crew_state"),
+    country: getInputValue("add_crew_country"),
+    company: getInputValue("add_crew_company"),
+    project: getInputValue("add_crew_project"),
+    website: getInputValue("add_crew_website"),
+    notes: getInputValue("add_crew_notes"),
+  };
+}
+
 const STORE_SEARCH_FIELD_IDS = [
   "store_name",
   "address",
@@ -1381,7 +1601,7 @@ const CREW_SEARCH_FIELD_IDS = [
   "crew_project",
 ];
 
-const ADD_FIELD_IDS = [
+const ADD_STORE_FIELD_IDS = [
   "add_store_name",
   "add_address",
   "add_address_2",
@@ -1405,6 +1625,34 @@ const ADD_FIELD_IDS = [
   "add_fri_close",
   "add_sat_open",
   "add_sat_close",
+];
+
+const ADD_MEDIA_FIELD_IDS = [
+  "add_media_title",
+  "add_media_type",
+  "add_media_format",
+  "add_media_genre",
+  "add_media_platform",
+  "add_media_year",
+  "add_media_company",
+  "add_media_location",
+  "add_media_website",
+  "add_media_notes",
+];
+
+const ADD_CREW_FIELD_IDS = [
+  "add_crew_name",
+  "add_crew_role",
+  "add_crew_department",
+  "add_crew_email",
+  "add_crew_phone",
+  "add_crew_city",
+  "add_crew_state",
+  "add_crew_country",
+  "add_crew_company",
+  "add_crew_project",
+  "add_crew_website",
+  "add_crew_notes",
 ];
 
 function forceHideSection(section: HTMLElement | null): void {
@@ -1655,29 +1903,18 @@ function clearCrewForm(): void {
   CREW_SEARCH_FIELD_IDS.forEach((id) => setInputValue(id, ""));
 }
 
-function clearCurrentForm(): void {
-  if (currentMode === "stores") clearStoreForm();
-  if (currentMode === "media") clearMediaForm();
-  if (currentMode === "crew") clearCrewForm();
-
-  setGridRows([]);
-  setStatus("Filters cleared.");
-}
-
-function clearAddForm(): void {
-  ADD_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+function clearAddStoreForm(): void {
+  ADD_STORE_FIELD_IDS.forEach((id) => setInputValue(id, ""));
   setInputValue("add_country", "");
   setInputValue("add_quest", "");
 }
 
-function loadAllCurrentMode(): void {
-  if (currentMode === "stores") clearStoreForm();
-  if (currentMode === "media") clearMediaForm();
-  if (currentMode === "crew") clearCrewForm();
+function clearAddMediaForm(): void {
+  ADD_MEDIA_FIELD_IDS.forEach((id) => setInputValue(id, ""));
+}
 
-  requestAnimationFrame(() => {
-    void fetchCurrentMode();
-  });
+function clearAddCrewForm(): void {
+  ADD_CREW_FIELD_IDS.forEach((id) => setInputValue(id, ""));
 }
 
 async function addStore(): Promise<void> {
@@ -1759,7 +1996,7 @@ async function addStore(): Promise<void> {
 
     const result = rawText ? JSON.parse(rawText) : {};
 
-    clearAddForm();
+    clearAddStoreForm();
     closeAddStoreModal();
     showToast("Added to the Quest 🚀");
     setStatus(
@@ -1779,6 +2016,128 @@ async function addStore(): Promise<void> {
       err instanceof Error
         ? `Error adding store: ${err.message}`
         : "Error adding store.",
+    );
+  }
+}
+
+async function addMedia(): Promise<void> {
+  const values = getNewMediaFormValues();
+
+  if (!values.title) {
+    setStatus("Please enter a title for media.");
+    return;
+  }
+
+  const payload = {
+    title: values.title,
+    media_type: values.media_type,
+    format: values.format,
+    genre: values.genre,
+    platform: values.platform,
+    year: values.year,
+    company: values.company,
+    location: values.location,
+    website: values.website,
+    notes: values.notes,
+  };
+
+  try {
+    setStatus("Saving media...");
+
+    const res = await fetch(`${API_BASE}/api/media`, {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const rawText = await res.text();
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${rawText}`);
+    }
+
+    clearAddMediaForm();
+    closeAddMediaModal();
+    showToast("Media added 🎬");
+    setStatus("Media added successfully.");
+
+    if (currentMode !== "media") {
+      showSearchSection("media");
+    }
+
+    await fetchMedia();
+  } catch (err) {
+    console.error("addMedia failed:", err);
+    setStatus(
+      err instanceof Error
+        ? `Error adding media: ${err.message}`
+        : "Error adding media.",
+    );
+  }
+}
+
+async function addCrew(): Promise<void> {
+  const values = getNewCrewFormValues();
+
+  if (!values.name) {
+    setStatus("Please enter a name for crew.");
+    return;
+  }
+
+  const payload = {
+    name: values.name,
+    role: values.role,
+    department: values.department,
+    email: values.email,
+    phone: values.phone,
+    city: values.city,
+    state: values.state,
+    country: values.country,
+    company: values.company,
+    project: values.project,
+    website: values.website,
+    notes: values.notes,
+  };
+
+  try {
+    setStatus("Saving crew...");
+
+    const res = await fetch(`${API_BASE}/api/crew`, {
+      method: "POST",
+      credentials: "omit",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const rawText = await res.text();
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${rawText}`);
+    }
+
+    clearAddCrewForm();
+    closeAddCrewModal();
+    showToast("Crew added 🎥");
+    setStatus("Crew added successfully.");
+
+    if (currentMode !== "crew") {
+      showSearchSection("crew");
+    }
+
+    await fetchCrew();
+  } catch (err) {
+    console.error("addCrew failed:", err);
+    setStatus(
+      err instanceof Error
+        ? `Error adding crew: ${err.message}`
+        : "Error adding crew.",
     );
   }
 }
@@ -1807,48 +2166,6 @@ document.getElementById("modeCrewBtn")?.addEventListener("click", () => {
   playClick();
   showSearchSection("crew");
 });
-
-document
-  .getElementById("goToMediaFromStoreBtn")
-  ?.addEventListener("click", () => {
-    playClick();
-    showSearchSection("media");
-  });
-
-document
-  .getElementById("goToCrewFromStoreBtn")
-  ?.addEventListener("click", () => {
-    playClick();
-    showSearchSection("crew");
-  });
-
-document
-  .getElementById("backToStoresFromMediaBtn")
-  ?.addEventListener("click", () => {
-    playClick();
-    showSearchSection("stores");
-  });
-
-document
-  .getElementById("goToCrewFromMediaBtn")
-  ?.addEventListener("click", () => {
-    playClick();
-    showSearchSection("crew");
-  });
-
-document
-  .getElementById("backToStoresFromCrewBtn")
-  ?.addEventListener("click", () => {
-    playClick();
-    showSearchSection("stores");
-  });
-
-document
-  .getElementById("goToMediaFromCrewBtn")
-  ?.addEventListener("click", () => {
-    playClick();
-    showSearchSection("media");
-  });
 
 document.getElementById("searchBtn")?.addEventListener("click", () => {
   startMusic();
@@ -1919,10 +2236,34 @@ document.getElementById("openModalBtn")?.addEventListener("click", () => {
   openAddStoreModal();
 });
 
+document.getElementById("openAddMediaBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  openAddMediaModal();
+});
+
+document.getElementById("openAddCrewBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  openAddCrewModal();
+});
+
 document.getElementById("submitAddStoreBtn")?.addEventListener("click", () => {
   startMusic();
   playClick();
   void addStore();
+});
+
+document.getElementById("submitAddMediaBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  void addMedia();
+});
+
+document.getElementById("submitAddCrewBtn")?.addEventListener("click", () => {
+  startMusic();
+  playClick();
+  void addCrew();
 });
 
 document.getElementById("cancelAddStoreBtn")?.addEventListener("click", () => {
@@ -1933,6 +2274,26 @@ document.getElementById("cancelAddStoreBtn")?.addEventListener("click", () => {
 document.getElementById("closeAddStoreBtn")?.addEventListener("click", () => {
   playClick();
   closeAddStoreModal();
+});
+
+document.getElementById("cancelAddMediaBtn")?.addEventListener("click", () => {
+  playClick();
+  closeAddMediaModal();
+});
+
+document.getElementById("closeAddMediaBtn")?.addEventListener("click", () => {
+  playClick();
+  closeAddMediaModal();
+});
+
+document.getElementById("cancelAddCrewBtn")?.addEventListener("click", () => {
+  playClick();
+  closeAddCrewModal();
+});
+
+document.getElementById("closeAddCrewBtn")?.addEventListener("click", () => {
+  playClick();
+  closeAddCrewModal();
 });
 
 document
@@ -1946,6 +2307,14 @@ document.getElementById("addStoreModal")?.addEventListener("click", (event) => {
   if (event.target === event.currentTarget) closeAddStoreModal();
 });
 
+document.getElementById("addMediaModal")?.addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeAddMediaModal();
+});
+
+document.getElementById("addCrewModal")?.addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeAddCrewModal();
+});
+
 document
   .getElementById("storeDetailModal")
   ?.addEventListener("click", (event) => {
@@ -1955,6 +2324,8 @@ document
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeAddStoreModal();
+    closeAddMediaModal();
+    closeAddCrewModal();
     closeStoreDetailModal();
   }
 });
