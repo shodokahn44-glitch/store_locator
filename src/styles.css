@@ -163,7 +163,7 @@ body {
 }
 
 .hero-logo {
-  width: clamp(280px, 40vw, 600px);
+  width: clamp(560px, 80vw, 1200px);
   height: auto;
   display: block;
   margin: 0 auto;
