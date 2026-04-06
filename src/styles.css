@@ -892,12 +892,6 @@ input[type="time"] {
       min-width: 0;
     }
 
-    .search-panel-footer {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 14px;
-    }
-
     .store-link {
       color: #7fd6ff;
       text-decoration: none;
