@@ -659,6 +659,25 @@ function renderAppShell(_user: AuthUser): void {
         <p class="hero-tagline">Search stores, media, crew, add new locations, and keep the catalog synced.</p>
       </header>
 
+      ${
+        _user.is_admin
+          ? `
+      <section class="panel retro-panel admin-panel">
+        <div class="admin-panel-header">
+          <div>
+            <h2>Admin Panel</h2>
+            <p class="admin-panel-subtitle">Approve or reject pending account requests without opening MongoDB.</p>
+          </div>
+          <button id="refreshPendingUsersBtn" class="retro-btn accent" type="button">Refresh Requests</button>
+        </div>
+        <div id="pendingUsersList" class="pending-users-list">
+          <div class="status-bar">Loading pending users...</div>
+        </div>
+      </section>
+      `
+          : ""
+      }
+
       <section class="top-row">
         <div class="panel retro-panel music-panel">
           <h2>Soundtrack</h2>
