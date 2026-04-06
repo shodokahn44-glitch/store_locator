@@ -435,23 +435,21 @@ function renderAuthScreen(): void {
   app!.innerHTML = `
     <div class="page retro-shell auth-shell">
       <div class="auth-center-wrap">
-        <div class="panel retro-panel auth-retro-card">
+        <div class="panel retro-panel auth-retro-card auth-centered-card">
           <div class="auth-logo-wrap">
-            <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo auth-logo" />
+            <img
+              src="${assetUrl("/logo.png")}"
+              alt="Neo Retro Store Locator"
+              class="hero-logo auth-logo"
+            />
           </div>
 
-          <h1 class="auth-title">Neo Retro Login</h1>
-          <p class="auth-subtitle">Sign in or create an account</p>
+          <p class="auth-subtitle auth-subtitle-tight">Sign in or create an account</p>
 
           <div id="auth-message" class="auth-message"></div>
 
-          <div class="mode-switcher auth-tabs">
-            <button id="show-login" class="retro-btn accent" type="button">Login</button>
-            <button id="show-register" class="retro-btn secondary" type="button">Register</button>
-          </div>
-
-          <form id="login-form" class="auth-form retro-auth-form">
-            <div class="search-grid auth-grid">
+          <form id="login-form" class="auth-form retro-auth-form auth-login-form">
+            <div class="search-grid auth-grid auth-grid-single">
               <div>
                 <label for="login-email">Email</label>
                 <input id="login-email" type="email" required />
@@ -463,14 +461,30 @@ function renderAuthScreen(): void {
               </div>
             </div>
 
-            <div class="button-row auth-button-row">
+            <div class="button-row auth-button-row auth-bottom-buttons">
               <button class="retro-btn accent" type="submit">Login</button>
-              <button class="retro-btn secondary logout-floating">Logout</button>
+              <button id="open-register-modal" class="retro-btn secondary" type="button">Register</button>
             </div>
           </form>
+        </div>
+      </div>
 
-          <form id="register-form" class="auth-form retro-auth-form hidden" style="display:none;">
+      <div id="registerModal" class="modal-overlay hidden">
+        <div class="panel retro-panel modal-card auth-register-modal">
+          <div class="modal-header">
+            <h2>Register for Access</h2>
+            <button id="closeRegisterModal" class="modal-close-btn" type="button">&times;</button>
+          </div>
+
+          <div id="register-message" class="auth-message"></div>
+
+          <form id="register-form" class="auth-form retro-auth-form">
             <div class="search-grid auth-grid">
+              <div>
+                <label for="register-full-name">Full Name</label>
+                <input id="register-full-name" type="text" required />
+              </div>
+
               <div>
                 <label for="register-username">Username</label>
                 <input id="register-username" type="text" required />
@@ -487,8 +501,9 @@ function renderAuthScreen(): void {
               </div>
             </div>
 
-            <div class="button-row auth-button-row">
-              <button class="retro-btn success" type="submit">Create Account</button>
+            <div class="button-row auth-button-row auth-bottom-buttons">
+              <button class="retro-btn success" type="submit">Submit for Approval</button>
+              <button id="cancelRegisterModal" class="retro-btn secondary" type="button">Cancel</button>
             </div>
           </form>
         </div>
@@ -497,18 +512,19 @@ function renderAuthScreen(): void {
   `;
 
   const authMessage = document.getElementById("auth-message");
+  const registerMessage = document.getElementById("register-message");
+
   const loginForm = document.getElementById(
     "login-form",
   ) as HTMLFormElement | null;
   const registerForm = document.getElementById(
     "register-form",
   ) as HTMLFormElement | null;
-  const showLogin = document.getElementById(
-    "show-login",
-  ) as HTMLButtonElement | null;
-  const showRegister = document.getElementById(
-    "show-register",
-  ) as HTMLButtonElement | null;
+
+  const registerModal = document.getElementById("registerModal");
+  const openRegisterModalBtn = document.getElementById("open-register-modal");
+  const closeRegisterModalBtn = document.getElementById("closeRegisterModal");
+  const cancelRegisterModalBtn = document.getElementById("cancelRegisterModal");
 
   function setAuthMessage(message: string, isError = false): void {
     if (!authMessage) return;
@@ -516,42 +532,32 @@ function renderAuthScreen(): void {
     authMessage.className = `auth-message ${isError ? "error" : "success"}`;
   }
 
-  function showLoginTab(): void {
-    if (loginForm) {
-      loginForm.classList.remove("hidden");
-      loginForm.style.display = "block";
-    }
-    if (registerForm) {
-      registerForm.classList.add("hidden");
-      registerForm.style.display = "none";
-    }
-
-    showLogin?.classList.add("accent");
-    showLogin?.classList.remove("secondary");
-    showRegister?.classList.add("secondary");
-    showRegister?.classList.remove("accent");
-    setAuthMessage("");
+  function setRegisterMessage(message: string, isError = false): void {
+    if (!registerMessage) return;
+    registerMessage.textContent = message;
+    registerMessage.className = `auth-message ${isError ? "error" : "success"}`;
   }
 
-  function showRegisterTab(): void {
-    if (registerForm) {
-      registerForm.classList.remove("hidden");
-      registerForm.style.display = "block";
-    }
-    if (loginForm) {
-      loginForm.classList.add("hidden");
-      loginForm.style.display = "none";
-    }
-
-    showRegister?.classList.add("accent");
-    showRegister?.classList.remove("secondary");
-    showLogin?.classList.add("secondary");
-    showLogin?.classList.remove("accent");
-    setAuthMessage("");
+  function openRegisterModal(): void {
+    registerModal?.classList.remove("hidden");
+    setRegisterMessage("");
   }
 
-  showLogin?.addEventListener("click", showLoginTab);
-  showRegister?.addEventListener("click", showRegisterTab);
+  function closeRegisterModal(): void {
+    registerModal?.classList.add("hidden");
+    setRegisterMessage("");
+    registerForm?.reset();
+  }
+
+  openRegisterModalBtn?.addEventListener("click", openRegisterModal);
+  closeRegisterModalBtn?.addEventListener("click", closeRegisterModal);
+  cancelRegisterModalBtn?.addEventListener("click", closeRegisterModal);
+
+  registerModal?.addEventListener("click", (event) => {
+    if (event.target === registerModal) {
+      closeRegisterModal();
+    }
+  });
 
   loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -573,18 +579,21 @@ function renderAuthScreen(): void {
           body: JSON.stringify({ email, password }),
         },
       );
+
       currentUser = result.user;
       renderAppShell(result.user);
       initializeAppAfterRender();
 
       if (result.user.is_admin) {
-        document
-          .getElementById("refreshPendingUsersBtn")
-          ?.addEventListener("click", () => {
-            void loadPendingUsers();
-          });
+        setTimeout(() => {
+          document
+            .getElementById("refreshPendingUsersBtn")
+            ?.addEventListener("click", () => {
+              void loadPendingUsers();
+            });
 
-        void loadPendingUsers();
+          void loadPendingUsers();
+        }, 100);
       }
     } catch (error) {
       setAuthMessage(
@@ -597,6 +606,10 @@ function renderAuthScreen(): void {
   registerForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    const full_name =
+      (
+        document.getElementById("register-full-name") as HTMLInputElement | null
+      )?.value.trim() ?? "";
     const username =
       (
         document.getElementById("register-username") as HTMLInputElement | null
@@ -610,36 +623,30 @@ function renderAuthScreen(): void {
         ?.value ?? "";
 
     try {
-      setAuthMessage("Creating account...");
-      const result = await apiRequest<{ ok: true; user: AuthUser }>(
+      setRegisterMessage("Submitting request...");
+      await apiRequest<{ ok: true; message: string }>(
         apiUrl("/api/auth/register"),
         {
           method: "POST",
-          body: JSON.stringify({ username, email, password }),
+          body: JSON.stringify({ full_name, username, email, password }),
         },
       );
-      currentUser = result.user;
-      renderAppShell(result.user);
-      initializeAppAfterRender();
 
-      if (result.user.is_admin) {
-        document
-          .getElementById("refreshPendingUsersBtn")
-          ?.addEventListener("click", () => {
-            void loadPendingUsers();
-          });
+      setRegisterMessage(
+        "Registration submitted. Your account is pending approval.",
+        false,
+      );
 
-        void loadPendingUsers();
-      }
+      window.setTimeout(() => {
+        closeRegisterModal();
+      }, 1500);
     } catch (error) {
-      setAuthMessage(
+      setRegisterMessage(
         error instanceof Error ? error.message : "Registration failed",
         true,
       );
     }
   });
-
-  showLoginTab();
 }
 
 function renderAppShell(_user: AuthUser): void {
