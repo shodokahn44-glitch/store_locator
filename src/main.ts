@@ -2585,4 +2585,10 @@ async function boot(): Promise<void> {
   renderAuthScreen();
 }
 
+const footer = document.querySelector(".site-footer");
+if (footer) {
+  const year = new Date().getFullYear();
+  footer.textContent = `© ${year} Psycho Bunny Films. All rights reserved.`;
+}
+
 void boot();
