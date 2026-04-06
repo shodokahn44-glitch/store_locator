@@ -644,13 +644,16 @@ function renderAppShell(_user: AuthUser): void {
             </div>
 
             <div class="button-row">
-  <button id="searchBtn" class="retro-btn">Search</button>
-  <button id="clearBtn" class="retro-btn secondary">Clear</button>
-  <button id="loadAllBtn" class="retro-btn accent">Load All</button>
-  <button id="openModalBtn" class="join-btn">Join the Quest</button>
-</div>
+              <button id="searchBtn" class="retro-btn" type="button">Search</button>
+              <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
+              <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
+              <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+            </div>
 
-<button id="logoutBtn" class="retro-btn secondary logout-floating">Logout</button>
+            <div class="search-panel-footer">
+              <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
+            </div>
+          </div>
 
           <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
             <div class="search-grid">
@@ -762,10 +765,6 @@ function renderAppShell(_user: AuthUser): void {
               <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
               <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
             </div>
-          </div>
-
-          <div class="search-panel-footer">
-            <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
           </div>
         </div>
       </section>
