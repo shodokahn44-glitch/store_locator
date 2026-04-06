@@ -545,16 +545,8 @@ function renderAuthScreen(): void {
   showLoginTab();
 }
 
-function renderAppShell(user: AuthUser): void {
+function renderAppShell(_user: AuthUser): void {
   app!.innerHTML = `
-    <div class="app-topbar">
-      <div class="app-user">
-        <strong>${escapeHtml(user.username)}</strong>
-        <span>${escapeHtml(user.email)}</span>
-      </div>
-      <button id="logoutBtn" class="retro-btn secondary" type="button">Logout</button>
-    </div>
-
     <div class="page retro-shell">
       <header class="page-hero">
         <div class="hero-logo-wrap">
@@ -769,6 +761,10 @@ function renderAppShell(user: AuthUser): void {
               <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
               <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
             </div>
+          </div>
+
+          <div class="search-panel-footer">
+            <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
           </div>
         </div>
       </section>
@@ -1603,12 +1599,20 @@ const storeColumnDefs: ColDef<GridRow>[] = [
   {
     headerName: "Store Name",
     field: "store_name",
-    cellRenderer: (params: ICellRendererParams<GridRow>): string => {
-      const row = params.data as StoreRow | undefined;
-      const name = row?.store_name ?? "";
-      return `<button class="grid-link-btn" data-store-detail="true">${escapeHtml(
-        String(name),
-      )}</button>`;
+    cellRenderer: (params: ICellRendererParams<GridRow>): HTMLElement => {
+      const data = (params.data ?? {}) as StoreRow;
+      const link = document.createElement("a");
+
+      link.href = "#";
+      link.textContent = String(data.store_name ?? "");
+      link.className = "store-link";
+
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        openStoreDetailModal(data);
+      });
+
+      return link;
     },
   },
   {
@@ -1766,13 +1770,6 @@ function initGrid(): void {
       filter: true,
       flex: 1,
       minWidth: 120,
-    },
-    onCellClicked: (event: CellClickedEvent<GridRow>) => {
-      if (currentMode !== "stores") return;
-      const target = event.event?.target as HTMLElement | null;
-      if (target?.closest("[data-store-detail='true']")) {
-        openStoreDetailModal(event.data as StoreRow);
-      }
     },
   };
 
