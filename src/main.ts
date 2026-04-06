@@ -587,74 +587,74 @@ function renderAppShell(_user: AuthUser): void {
 
           <h2 id="searchPanelTitle">Search Stores</h2>
 
-          <div id="storeSearchSection" class="search-section" style="display:block;">
-            <div class="search-grid">
-              <div>
-                <label for="store_name">Store Name</label>
-                <input id="store_name" type="text" />
-              </div>
+<div id="storeSearchSection" class="search-section" style="display:block;">
+  <div class="search-grid">
+    <div>
+      <label for="store_name">Store Name</label>
+      <input id="store_name" type="text" />
+    </div>
 
-              <div>
-                <label for="address">Address</label>
-                <input id="address" type="text" />
-              </div>
+    <div>
+      <label for="address">Address</label>
+      <input id="address" type="text" />
+    </div>
 
-              <div>
-                <label for="address_2">Address 2</label>
-                <input id="address_2" type="text" />
-              </div>
+    <div>
+      <label for="address_2">Address 2</label>
+      <input id="address_2" type="text" />
+    </div>
 
-              <div>
-                <label for="city">City</label>
-                <input id="city" type="text" />
-              </div>
+    <div>
+      <label for="city">City</label>
+      <input id="city" type="text" />
+    </div>
 
-              <div>
-                <label for="state">State / Province</label>
-                <input id="state" type="text" />
-              </div>
+    <div>
+      <label for="state">State / Province</label>
+      <input id="state" type="text" />
+    </div>
 
-              <div>
-                <label for="zip">Zip / Postal Code</label>
-                <input id="zip" type="text" />
-              </div>
+    <div>
+      <label for="zip">Zip / Postal Code</label>
+      <input id="zip" type="text" />
+    </div>
 
-              <div>
-                <label for="phone_number">Phone Number</label>
-                <input id="phone_number" type="text" />
-              </div>
+    <div>
+      <label for="phone_number">Phone Number</label>
+      <input id="phone_number" type="text" />
+    </div>
 
-              <div>
-                <label for="country">Country</label>
-                <select id="country">
-                  <option value="">All Countries</option>
-                  <option value="USA">USA</option>
-                  <option value="Canada">Canada</option>
-                </select>
-              </div>
+    <div>
+      <label for="country">Country</label>
+      <select id="country">
+        <option value="">All Countries</option>
+        <option value="USA">USA</option>
+        <option value="Canada">Canada</option>
+      </select>
+    </div>
 
-              <div>
-                <label for="quest_filter">Quest Participated In</label>
-                <select id="quest_filter">
-                  <option value="">Select a Quest</option>
-                  <option value="nes_quest">Nintendo Quest</option>
-                  <option value="snes_quest">Super Nintendo Quest</option>
-                  <option value="n64_quest">Nintendo 64 Quest</option>
-                </select>
-              </div>
-            </div>
+    <div>
+      <label for="quest_filter">Quest Participated In</label>
+      <select id="quest_filter">
+        <option value="">Select a Quest</option>
+        <option value="nes_quest">Nintendo Quest</option>
+        <option value="snes_quest">Super Nintendo Quest</option>
+        <option value="n64_quest">Nintendo 64 Quest</option>
+      </select>
+    </div>
+  </div>
 
-            <div class="button-row">
-              <button id="searchBtn" class="retro-btn" type="button">Search</button>
-              <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
-              <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
-              <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
-            </div>
+  <div class="button-row">
+    <button id="searchBtn" class="retro-btn" type="button">Search</button>
+    <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
+    <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
+    <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+  </div>
 
-            <div class="search-panel-footer">
-              <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
-            </div>
-          </div>
+  <div class="search-panel-footer">
+    <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
+  </div>
+</div>
 
           <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
             <div class="search-grid">
