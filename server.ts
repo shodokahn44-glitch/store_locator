@@ -10,6 +10,11 @@ import bcrypt from "bcryptjs";
 import { MongoClient, Db, Collection, ObjectId } from "mongodb";
 import path from "path";
 
+function getParamId(param: string | string[] | undefined): string {
+  if (Array.isArray(param)) return param[0] ?? "";
+  return param ?? "";
+}
+
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -46,6 +51,7 @@ declare module "express-session" {
       id: string;
       username: string;
       email: string;
+      is_admin?: boolean;
     };
   }
 }
@@ -88,6 +94,7 @@ interface UserDocument {
   password: string;
   full_name?: string;
   approved?: boolean;
+  is_admin?: boolean;
   createdAt: Date;
 }
 
@@ -251,6 +258,20 @@ function requireAuth(req: Request, res: Response, next: NextFunction): void {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  next();
+}
+
+function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.session.user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  if (!req.session.user.is_admin) {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+
   next();
 }
 
@@ -457,21 +478,23 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       email,
       password: hash,
       approved: false,
+      is_admin: false,
       createdAt: new Date(),
     });
 
-    // 🔥 SEND EMAIL HERE
+    // 🔥 SEND APPROVAL EMAIL
     try {
       await transporter.sendMail({
         from: process.env.SMTP_FROM,
         to: "mail@nathansalyer.com",
-        subject: "🚀 New User Registration - Approval Needed",
+        subject: "🚀 New User Registration Approval Needed",
         html: `
-      <h2>New User Request</h2>
-      <p><strong>Name:</strong> ${full_name}</p>
-      <p><strong>Username:</strong> ${username}</p>
-      <p><strong>Email:</strong> ${email}</p>
-    `,
+          <h2>New User Pending Approval</h2>
+          <p><b>Name:</b> ${full_name}</p>
+          <p><b>Username:</b> ${username}</p>
+          <p><b>Email:</b> ${email}</p>
+          <p>Login to approve this user.</p>
+        `,
       });
 
       console.log("✅ Approval email sent");
@@ -508,20 +531,21 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
 
     const valid = await bcrypt.compare(password, user.password);
 
+    if (!valid) {
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
     if (!user.approved) {
       return res.status(403).json({
         error: "Your account is pending approval.",
       });
     }
 
-    if (!valid) {
-      return res.status(401).json({ error: "Invalid email or password." });
-    }
-
     req.session.user = {
       id: String(user._id),
       username: user.username,
       email: user.email,
+      is_admin: Boolean(user.is_admin),
     };
 
     return res.status(200).json({
@@ -555,6 +579,87 @@ app.post("/api/auth/logout", (req: Request, res: Response) => {
     res.clearCookie("connect.sid");
     return res.status(200).json({ ok: true });
   });
+});
+
+app.get(
+  "/api/admin/pending-users",
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    try {
+      const pendingUsers = await usersCollection
+        .find(
+          { approved: { $ne: true } },
+          {
+            projection: {
+              username: 1,
+              email: 1,
+              full_name: 1,
+              createdAt: 1,
+              approved: 1,
+              is_admin: 1,
+            },
+          },
+        )
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      return res.status(200).json({
+        ok: true,
+        users: pendingUsers.map((user) => ({
+          _id: String(user._id),
+          username: normalizeString(user.username),
+          email: normalizeString(user.email),
+          full_name: normalizeString(user.full_name),
+          approved: Boolean(user.approved),
+          is_admin: Boolean(user.is_admin),
+          createdAt: user.createdAt,
+        })),
+      });
+    } catch (error) {
+      console.error("Failed to load pending users:", error);
+      return res.status(500).json({ error: "Failed to load pending users." });
+    }
+  },
+);
+
+app.post("/api/admin/approve-user/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = getParamId(req.params.id);
+
+    if (!id || !ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user id." });
+    }
+
+    await usersCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { approved: true } },
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Approve failed" });
+  }
+});
+
+app.delete("/api/admin/reject-user/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = getParamId(req.params.id);
+
+    if (!id || !ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid user id." });
+    }
+
+    await usersCollection.deleteOne({
+      _id: new ObjectId(id),
+      approved: { $ne: true },
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Reject failed" });
+  }
 });
 
 // STORES

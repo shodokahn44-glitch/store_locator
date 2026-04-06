@@ -136,6 +136,7 @@ type AuthUser = {
   id: string;
   username: string;
   email: string;
+  is_admin?: boolean;
 };
 
 type MeResponse = { ok: true; user: AuthUser } | { error: string };
@@ -345,6 +346,81 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#039;");
 }
 
+async function loadPendingUsers(): Promise<void> {
+  const list = document.getElementById("pendingUsersList");
+  if (!list || !currentUser?.is_admin) return;
+
+  list.innerHTML = `<div class="status-bar">Loading pending users...</div>`;
+
+  try {
+    const result = await apiRequest<{
+      ok: true;
+      users: Array<{
+        _id: string;
+        full_name: string;
+        username: string;
+        email: string;
+        createdAt: string;
+      }>;
+    }>(apiUrl("/api/admin/pending-users"));
+
+    if (!result.users.length) {
+      list.innerHTML = `<div class="status-bar">No pending users.</div>`;
+      return;
+    }
+
+    list.innerHTML = result.users
+      .map(
+        (user) => `
+          <div class="pending-user-card" data-user-id="${user._id}">
+            <div class="pending-user-info">
+              <div><strong>Name:</strong> ${escapeHtml(user.full_name || "")}</div>
+              <div><strong>Username:</strong> ${escapeHtml(user.username || "")}</div>
+              <div><strong>Email:</strong> ${escapeHtml(user.email || "")}</div>
+            </div>
+            <div class="pending-user-actions">
+              <button class="retro-btn accent approve-user-btn" data-id="${user._id}" type="button">Approve</button>
+              <button class="retro-btn secondary reject-user-btn" data-id="${user._id}" type="button">Reject</button>
+            </div>
+          </div>
+        `,
+      )
+      .join("");
+
+    list.querySelectorAll(".approve-user-btn").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const id = (button as HTMLButtonElement).dataset.id;
+        if (!id) return;
+
+        await apiRequest(apiUrl(`/api/admin/approve-user/${id}`), {
+          method: "POST",
+        });
+
+        await loadPendingUsers();
+      });
+    });
+
+    list.querySelectorAll(".reject-user-btn").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const id = (button as HTMLButtonElement).dataset.id;
+        if (!id) return;
+
+        await apiRequest(apiUrl(`/api/admin/reject-user/${id}`), {
+          method: "DELETE",
+        });
+
+        await loadPendingUsers();
+      });
+    });
+  } catch (error) {
+    list.innerHTML = `<div class="status-bar">${
+      error instanceof Error
+        ? escapeHtml(error.message)
+        : "Failed to load pending users."
+    }</div>`;
+  }
+}
+
 function renderLoading(): void {
   app!.innerHTML = `
     <div class="auth-page">
@@ -359,21 +435,23 @@ function renderAuthScreen(): void {
   app!.innerHTML = `
     <div class="page retro-shell auth-shell">
       <div class="auth-center-wrap">
-        <div class="panel retro-panel auth-retro-card auth-centered-card">
+        <div class="panel retro-panel auth-retro-card">
           <div class="auth-logo-wrap">
-            <img
-              src="${assetUrl("/logo.png")}"
-              alt="Neo Retro Store Locator"
-              class="hero-logo auth-logo"
-            />
+            <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo auth-logo" />
           </div>
 
-          <p class="auth-subtitle auth-subtitle-tight">Sign in to access the store locator</p>
+          <h1 class="auth-title">Neo Retro Login</h1>
+          <p class="auth-subtitle">Sign in or create an account</p>
 
           <div id="auth-message" class="auth-message"></div>
 
-          <form id="login-form" class="auth-form retro-auth-form auth-login-form">
-            <div class="search-grid auth-grid auth-grid-single">
+          <div class="mode-switcher auth-tabs">
+            <button id="show-login" class="retro-btn accent" type="button">Login</button>
+            <button id="show-register" class="retro-btn secondary" type="button">Register</button>
+          </div>
+
+          <form id="login-form" class="auth-form retro-auth-form">
+            <div class="search-grid auth-grid">
               <div>
                 <label for="login-email">Email</label>
                 <input id="login-email" type="email" required />
@@ -385,30 +463,14 @@ function renderAuthScreen(): void {
               </div>
             </div>
 
-            <div class="button-row auth-button-row auth-bottom-buttons">
+            <div class="button-row auth-button-row">
               <button class="retro-btn accent" type="submit">Login</button>
-              <button id="open-register-modal" class="retro-btn secondary" type="button">Register</button>
+              <button class="retro-btn secondary logout-floating">Logout</button>
             </div>
           </form>
-        </div>
-      </div>
 
-      <div id="registerModal" class="modal-overlay hidden">
-        <div class="panel retro-panel modal-card auth-register-modal">
-          <div class="modal-header">
-            <h2>Register for Access</h2>
-            <button id="closeRegisterModal" class="modal-close-btn" type="button">&times;</button>
-          </div>
-
-          <div id="register-message" class="auth-message"></div>
-
-          <form id="register-form" class="auth-form retro-auth-form">
+          <form id="register-form" class="auth-form retro-auth-form hidden" style="display:none;">
             <div class="search-grid auth-grid">
-              <div>
-                <label for="register-full-name">Full Name</label>
-                <input id="register-full-name" type="text" required />
-              </div>
-
               <div>
                 <label for="register-username">Username</label>
                 <input id="register-username" type="text" required />
@@ -425,9 +487,8 @@ function renderAuthScreen(): void {
               </div>
             </div>
 
-            <div class="button-row auth-button-row auth-bottom-buttons">
-              <button class="retro-btn success" type="submit">Submit for Approval</button>
-              <button id="cancelRegisterModal" class="retro-btn secondary" type="button">Cancel</button>
+            <div class="button-row auth-button-row">
+              <button class="retro-btn success" type="submit">Create Account</button>
             </div>
           </form>
         </div>
@@ -436,19 +497,18 @@ function renderAuthScreen(): void {
   `;
 
   const authMessage = document.getElementById("auth-message");
-  const registerMessage = document.getElementById("register-message");
-
   const loginForm = document.getElementById(
     "login-form",
   ) as HTMLFormElement | null;
   const registerForm = document.getElementById(
     "register-form",
   ) as HTMLFormElement | null;
-
-  const registerModal = document.getElementById("registerModal");
-  const openRegisterModalBtn = document.getElementById("open-register-modal");
-  const closeRegisterModalBtn = document.getElementById("closeRegisterModal");
-  const cancelRegisterModalBtn = document.getElementById("cancelRegisterModal");
+  const showLogin = document.getElementById(
+    "show-login",
+  ) as HTMLButtonElement | null;
+  const showRegister = document.getElementById(
+    "show-register",
+  ) as HTMLButtonElement | null;
 
   function setAuthMessage(message: string, isError = false): void {
     if (!authMessage) return;
@@ -456,32 +516,42 @@ function renderAuthScreen(): void {
     authMessage.className = `auth-message ${isError ? "error" : "success"}`;
   }
 
-  function setRegisterMessage(message: string, isError = false): void {
-    if (!registerMessage) return;
-    registerMessage.textContent = message;
-    registerMessage.className = `auth-message ${isError ? "error" : "success"}`;
-  }
-
-  function openRegisterModal(): void {
-    registerModal?.classList.remove("hidden");
-    setRegisterMessage("");
-  }
-
-  function closeRegisterModal(): void {
-    registerModal?.classList.add("hidden");
-    setRegisterMessage("");
-    registerForm?.reset();
-  }
-
-  openRegisterModalBtn?.addEventListener("click", openRegisterModal);
-  closeRegisterModalBtn?.addEventListener("click", closeRegisterModal);
-  cancelRegisterModalBtn?.addEventListener("click", closeRegisterModal);
-
-  registerModal?.addEventListener("click", (event) => {
-    if (event.target === registerModal) {
-      closeRegisterModal();
+  function showLoginTab(): void {
+    if (loginForm) {
+      loginForm.classList.remove("hidden");
+      loginForm.style.display = "block";
     }
-  });
+    if (registerForm) {
+      registerForm.classList.add("hidden");
+      registerForm.style.display = "none";
+    }
+
+    showLogin?.classList.add("accent");
+    showLogin?.classList.remove("secondary");
+    showRegister?.classList.add("secondary");
+    showRegister?.classList.remove("accent");
+    setAuthMessage("");
+  }
+
+  function showRegisterTab(): void {
+    if (registerForm) {
+      registerForm.classList.remove("hidden");
+      registerForm.style.display = "block";
+    }
+    if (loginForm) {
+      loginForm.classList.add("hidden");
+      loginForm.style.display = "none";
+    }
+
+    showRegister?.classList.add("accent");
+    showRegister?.classList.remove("secondary");
+    showLogin?.classList.add("secondary");
+    showLogin?.classList.remove("accent");
+    setAuthMessage("");
+  }
+
+  showLogin?.addEventListener("click", showLoginTab);
+  showRegister?.addEventListener("click", showRegisterTab);
 
   loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -503,10 +573,19 @@ function renderAuthScreen(): void {
           body: JSON.stringify({ email, password }),
         },
       );
-
       currentUser = result.user;
       renderAppShell(result.user);
       initializeAppAfterRender();
+
+      if (result.user.is_admin) {
+        document
+          .getElementById("refreshPendingUsersBtn")
+          ?.addEventListener("click", () => {
+            void loadPendingUsers();
+          });
+
+        void loadPendingUsers();
+      }
     } catch (error) {
       setAuthMessage(
         error instanceof Error ? error.message : "Login failed",
@@ -518,10 +597,6 @@ function renderAuthScreen(): void {
   registerForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const full_name =
-      (
-        document.getElementById("register-full-name") as HTMLInputElement | null
-      )?.value.trim() ?? "";
     const username =
       (
         document.getElementById("register-username") as HTMLInputElement | null
@@ -535,30 +610,36 @@ function renderAuthScreen(): void {
         ?.value ?? "";
 
     try {
-      setRegisterMessage("Submitting request...");
-      await apiRequest<{ ok: true; message: string }>(
+      setAuthMessage("Creating account...");
+      const result = await apiRequest<{ ok: true; user: AuthUser }>(
         apiUrl("/api/auth/register"),
         {
           method: "POST",
-          body: JSON.stringify({ full_name, username, email, password }),
+          body: JSON.stringify({ username, email, password }),
         },
       );
+      currentUser = result.user;
+      renderAppShell(result.user);
+      initializeAppAfterRender();
 
-      setRegisterMessage(
-        "Registration submitted. Your account is pending approval.",
-        false,
-      );
+      if (result.user.is_admin) {
+        document
+          .getElementById("refreshPendingUsersBtn")
+          ?.addEventListener("click", () => {
+            void loadPendingUsers();
+          });
 
-      window.setTimeout(() => {
-        closeRegisterModal();
-      }, 1500);
+        void loadPendingUsers();
+      }
     } catch (error) {
-      setRegisterMessage(
+      setAuthMessage(
         error instanceof Error ? error.message : "Registration failed",
         true,
       );
     }
   });
+
+  showLoginTab();
 }
 
 function renderAppShell(_user: AuthUser): void {
@@ -594,80 +675,82 @@ function renderAppShell(_user: AuthUser): void {
         </div>
 
         <div class="panel retro-panel search-panel">
-        <div class="top-controls">
-  <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
-  <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
-  <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
-  <button id="logoutBtn" class="retro-btn secondary logout-top" type="button">Logout</button>
-</div>
+          <div class="mode-switcher">
+            <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
+            <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
+            <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
+          </div>
 
           <h2 id="searchPanelTitle">Search Stores</h2>
 
-<div id="storeSearchSection" class="search-section" style="display:block;">
-  <div class="search-grid">
-    <div>
-      <label for="store_name">Store Name</label>
-      <input id="store_name" type="text" />
-    </div>
+          <div id="storeSearchSection" class="search-section" style="display:block;">
+            <div class="search-grid">
+              <div>
+                <label for="store_name">Store Name</label>
+                <input id="store_name" type="text" />
+              </div>
 
-    <div>
-      <label for="address">Address</label>
-      <input id="address" type="text" />
-    </div>
+              <div>
+                <label for="address">Address</label>
+                <input id="address" type="text" />
+              </div>
 
-    <div>
-      <label for="address_2">Address 2</label>
-      <input id="address_2" type="text" />
-    </div>
+              <div>
+                <label for="address_2">Address 2</label>
+                <input id="address_2" type="text" />
+              </div>
 
-    <div>
-      <label for="city">City</label>
-      <input id="city" type="text" />
-    </div>
+              <div>
+                <label for="city">City</label>
+                <input id="city" type="text" />
+              </div>
 
-    <div>
-      <label for="state">State / Province</label>
-      <input id="state" type="text" />
-    </div>
+              <div>
+                <label for="state">State / Province</label>
+                <input id="state" type="text" />
+              </div>
 
-    <div>
-      <label for="zip">Zip / Postal Code</label>
-      <input id="zip" type="text" />
-    </div>
+              <div>
+                <label for="zip">Zip / Postal Code</label>
+                <input id="zip" type="text" />
+              </div>
 
-    <div>
-      <label for="phone_number">Phone Number</label>
-      <input id="phone_number" type="text" />
-    </div>
+              <div>
+                <label for="phone_number">Phone Number</label>
+                <input id="phone_number" type="text" />
+              </div>
 
-    <div>
-      <label for="country">Country</label>
-      <select id="country">
-        <option value="">All Countries</option>
-        <option value="USA">USA</option>
-        <option value="Canada">Canada</option>
-      </select>
-    </div>
+              <div>
+                <label for="country">Country</label>
+                <select id="country">
+                  <option value="">All Countries</option>
+                  <option value="USA">USA</option>
+                  <option value="Canada">Canada</option>
+                </select>
+              </div>
 
-    <div>
-      <label for="quest_filter">Quest Participated In</label>
-      <select id="quest_filter">
-        <option value="">Select a Quest</option>
-        <option value="nes_quest">Nintendo Quest</option>
-        <option value="snes_quest">Super Nintendo Quest</option>
-        <option value="n64_quest">Nintendo 64 Quest</option>
-      </select>
-    </div>
-  </div>
+              <div>
+                <label for="quest_filter">Quest Participated In</label>
+                <select id="quest_filter">
+                  <option value="">Select a Quest</option>
+                  <option value="nes_quest">Nintendo Quest</option>
+                  <option value="snes_quest">Super Nintendo Quest</option>
+                  <option value="n64_quest">Nintendo 64 Quest</option>
+                </select>
+              </div>
+            </div>
 
-  <div class="button-row">
-    <button id="searchBtn" class="retro-btn" type="button">Search</button>
-    <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
-    <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
-    <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
-  </div>
+            <div class="button-row">
+              <button id="searchBtn" class="retro-btn" type="button">Search</button>
+              <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
+              <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
+              <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+            </div>
 
-
+            <div class="search-panel-footer">
+              <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
+            </div>
+          </div>
 
           <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
             <div class="search-grid">
@@ -2438,6 +2521,17 @@ async function boot(): Promise<void> {
       currentUser = me.user;
       renderAppShell(me.user);
       initializeAppAfterRender();
+
+      if (me.user.is_admin) {
+        document
+          .getElementById("refreshPendingUsersBtn")
+          ?.addEventListener("click", () => {
+            void loadPendingUsers();
+          });
+
+        void loadPendingUsers();
+      }
+
       return;
     }
   } catch {
