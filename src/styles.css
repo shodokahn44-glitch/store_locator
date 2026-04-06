@@ -898,10 +898,6 @@ input[type="time"] {
       margin-top: 14px;
     }
 
-    .logout-floating-btn {
-      min-width: 140px;
-    }
-
     .store-link {
       color: #7fd6ff;
       text-decoration: none;
@@ -921,21 +917,16 @@ input[type="time"] {
       color: #7fd6ff;
     }
 
-    /* Make search panel the anchor */
-    .search-panel {
-      position: relative;
+    .search-panel-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+      width: 100%;
     }
 
-    /* Logout button pinned to right side of panel */
-    .logout-floating {
-      position: absolute;
-      right: 20px;
-      top: calc(100% - 48px); /* aligns with button row height */
-    }
-
-    /* Optional: keep spacing clean so it doesn’t overlap buttons */
-    .button-row {
-      padding-right: 140px;
+    .logout-floating-btn {
+      min-width: 140px;
+      margin-left: auto;
     }
   }
 }
