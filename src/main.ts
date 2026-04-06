@@ -368,13 +368,12 @@ function renderAuthScreen(): void {
             />
           </div>
 
-          <h1 class="auth-title">Neo Retro Login</h1>
-          <p class="auth-subtitle">Sign in to access the store locator</p>
+          <p class="auth-subtitle auth-subtitle-tight">Sign in to access the store locator</p>
 
           <div id="auth-message" class="auth-message"></div>
 
-          <form id="login-form" class="auth-form retro-auth-form">
-            <div class="search-grid auth-grid">
+          <form id="login-form" class="auth-form retro-auth-form auth-login-form">
+            <div class="search-grid auth-grid auth-grid-single">
               <div>
                 <label for="login-email">Email</label>
                 <input id="login-email" type="email" required />

@@ -541,37 +541,39 @@ input[type="time"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 560px;
+  justify-content: flex-start;
+  min-height: 540px;
   text-align: center;
+  padding-top: 48px;
 }
 
 .auth-logo-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
   width: 100%;
 }
 
 .auth-logo {
-  max-width: 520px;
+  max-width: 420px;
   width: 100%;
   height: auto;
 }
 
 .auth-title {
-  margin: 6px 0 8px;
-  text-align: center;
-  font-size: 2.2rem;
-  color: #ffffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.45);
+  display: none;
 }
 
 .auth-subtitle {
-  margin: 0 0 24px;
+  margin: 0 0 18px;
   text-align: center;
   color: #d7e7ff;
   font-size: 1rem;
+}
+
+.auth-subtitle-tight {
+  margin-top: 4px;
+  margin-bottom: 18px;
 }
 
 .retro-auth-form {
@@ -579,19 +581,44 @@ input[type="time"] {
   max-width: 820px;
 }
 
+.auth-login-form {
+  width: 100%;
+  max-width: 720px;
+}
+
 .auth-grid {
   grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.auth-grid-single {
+  grid-template-columns: 1fr;
+  max-width: 520px;
+  margin: 0 auto;
+  gap: 16px;
+}
+
+.auth-grid-single > div {
+  text-align: left;
+}
+
+.auth-grid-single label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.auth-grid-single input {
+  width: 100%;
 }
 
 .auth-button-row,
 .auth-bottom-buttons {
   justify-content: center;
-  margin-top: 22px;
+  margin-top: 20px;
 }
 
 .auth-bottom-buttons .retro-btn,
 .auth-button-row .retro-btn {
-  min-width: 170px;
+  min-width: 148px;
 }
 
 .auth-message {
@@ -851,15 +878,15 @@ input[type="time"] {
 
   .auth-centered-card {
     min-height: auto;
-    padding: 24px 18px;
+    padding-top: 28px;
   }
 
   .auth-logo {
-    max-width: 360px;
+    max-width: 320px;
   }
 
-  .auth-title {
-    font-size: 1.8rem;
+  .auth-grid-single {
+    max-width: 100%;
   }
 
   .auth-bottom-buttons,
