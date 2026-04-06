@@ -152,35 +152,35 @@ body {
   text-align: center;
   padding-top: 34px;
   margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hero-logo-wrap {
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 0;
   margin-bottom: 10px;
+  overflow: visible;
 }
 
 .hero-logo {
+  display: block;
   width: clamp(560px, 80vw, 1200px);
   height: auto;
-  display: block;
   margin: 0 auto;
+  object-fit: contain;
+  object-position: center center;
   filter: drop-shadow(0 0 12px rgba(255, 0, 255, 0.6));
   animation: logoGlow 3s ease-in-out infinite alternate;
 }
 
-@keyframes logoGlow {
-  from {
-    filter: drop-shadow(0 0 8px rgba(255, 0, 255, 0.4));
-  }
-  to {
-    filter: drop-shadow(0 0 20px rgba(255, 0, 255, 0.9));
-  }
-}
-
 .hero-tagline {
+  width: 100%;
+  text-align: center;
   margin-top: 0;
   margin-bottom: 16px;
   font-size: 0.95rem;
