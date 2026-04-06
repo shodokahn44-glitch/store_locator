@@ -461,18 +461,23 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     });
 
     // 🔥 SEND EMAIL HERE
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to: "mail@nathansalyer.com",
-      subject: "🚀 New User Registration - Approval Needed",
-      html: `
-        <h2>New User Request</h2>
-        <p><strong>Name:</strong> ${full_name}</p>
-        <p><strong>Username:</strong> ${username}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p>Please approve this user in the database.</p>
-      `,
-    });
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: "mail@nathansalyer.com",
+        subject: "🚀 New User Registration - Approval Needed",
+        html: `
+      <h2>New User Request</h2>
+      <p><strong>Name:</strong> ${full_name}</p>
+      <p><strong>Username:</strong> ${username}</p>
+      <p><strong>Email:</strong> ${email}</p>
+    `,
+      });
+
+      console.log("✅ Approval email sent");
+    } catch (err) {
+      console.error("❌ Email failed (but user still created):", err);
+    }
 
     return res.status(200).json({
       ok: true,
