@@ -921,24 +921,22 @@ input[type="time"] {
       color: #7fd6ff;
     }
 
-    /* Make search panel relative so we can anchor inside it */
+    /* Make search panel the anchor */
     .search-panel {
       position: relative;
     }
 
-    /* Logout button pinned to right side */
+    /* Logout button pinned to right side of panel */
     .logout-floating {
       position: absolute;
       right: 20px;
-      bottom: 20px;
+      bottom: 20px; /* aligns nicely with button row */
       z-index: 10;
     }
 
-    .logout-floating {
-      position: absolute;
-      right: 20px;
-      top: 72%;
-      transform: translateY(-50%);
+    /* Optional: keep spacing clean so it doesn’t overlap buttons */
+    .button-row {
+      padding-right: 140px;
     }
   }
 }
