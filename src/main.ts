@@ -357,40 +357,64 @@ function renderLoading(): void {
 
 function renderAuthScreen(): void {
   app!.innerHTML = `
-    <div class="auth-page">
-      <div class="auth-card">
-        <h1>Neo Retro Login</h1>
-        <p class="subtitle">Sign in or create an account</p>
+    <div class="page retro-shell auth-shell">
+      <div class="auth-center-wrap">
+        <div class="panel retro-panel auth-retro-card">
+          <div class="auth-logo-wrap">
+            <img src="${assetUrl("/logo.png")}" alt="Neo Retro Store Locator" class="hero-logo auth-logo" />
+          </div>
 
-        <div id="auth-message" class="auth-message"></div>
+          <h1 class="auth-title">Neo Retro Login</h1>
+          <p class="auth-subtitle">Sign in or create an account</p>
 
-        <div class="tabs">
-          <button id="show-login" class="tab-btn active" type="button">Login</button>
-          <button id="show-register" class="tab-btn" type="button">Register</button>
+          <div id="auth-message" class="auth-message"></div>
+
+          <div class="mode-switcher auth-tabs">
+            <button id="show-login" class="retro-btn accent" type="button">Login</button>
+            <button id="show-register" class="retro-btn secondary" type="button">Register</button>
+          </div>
+
+          <form id="login-form" class="auth-form retro-auth-form">
+            <div class="search-grid auth-grid">
+              <div>
+                <label for="login-email">Email</label>
+                <input id="login-email" type="email" required />
+              </div>
+
+              <div>
+                <label for="login-password">Password</label>
+                <input id="login-password" type="password" required />
+              </div>
+            </div>
+
+            <div class="button-row auth-button-row">
+              <button class="retro-btn accent" type="submit">Login</button>
+            </div>
+          </form>
+
+          <form id="register-form" class="auth-form retro-auth-form hidden" style="display:none;">
+            <div class="search-grid auth-grid">
+              <div>
+                <label for="register-username">Username</label>
+                <input id="register-username" type="text" required />
+              </div>
+
+              <div>
+                <label for="register-email">Email</label>
+                <input id="register-email" type="email" required />
+              </div>
+
+              <div>
+                <label for="register-password">Password</label>
+                <input id="register-password" type="password" required />
+              </div>
+            </div>
+
+            <div class="button-row auth-button-row">
+              <button class="retro-btn success" type="submit">Create Account</button>
+            </div>
+          </form>
         </div>
-
-        <form id="login-form" class="auth-form">
-          <label for="login-email">Email</label>
-          <input id="login-email" type="email" required />
-
-          <label for="login-password">Password</label>
-          <input id="login-password" type="password" required />
-
-          <button class="primary-btn" type="submit">Login</button>
-        </form>
-
-        <form id="register-form" class="auth-form hidden">
-          <label for="register-username">Username</label>
-          <input id="register-username" type="text" required />
-
-          <label for="register-email">Email</label>
-          <input id="register-email" type="email" required />
-
-          <label for="register-password">Password</label>
-          <input id="register-password" type="password" required />
-
-          <button class="primary-btn" type="submit">Create Account</button>
-        </form>
       </div>
     </div>
   `;
@@ -402,8 +426,12 @@ function renderAuthScreen(): void {
   const registerForm = document.getElementById(
     "register-form",
   ) as HTMLFormElement | null;
-  const showLogin = document.getElementById("show-login");
-  const showRegister = document.getElementById("show-register");
+  const showLogin = document.getElementById(
+    "show-login",
+  ) as HTMLButtonElement | null;
+  const showRegister = document.getElementById(
+    "show-register",
+  ) as HTMLButtonElement | null;
 
   function setAuthMessage(message: string, isError = false): void {
     if (!authMessage) return;
@@ -411,21 +439,42 @@ function renderAuthScreen(): void {
     authMessage.className = `auth-message ${isError ? "error" : "success"}`;
   }
 
-  showLogin?.addEventListener("click", () => {
-    loginForm?.classList.remove("hidden");
-    registerForm?.classList.add("hidden");
-    showLogin.classList.add("active");
-    showRegister?.classList.remove("active");
-    setAuthMessage("");
-  });
+  function showLoginTab(): void {
+    if (loginForm) {
+      loginForm.classList.remove("hidden");
+      loginForm.style.display = "block";
+    }
+    if (registerForm) {
+      registerForm.classList.add("hidden");
+      registerForm.style.display = "none";
+    }
 
-  showRegister?.addEventListener("click", () => {
-    registerForm?.classList.remove("hidden");
-    loginForm?.classList.add("hidden");
-    showRegister.classList.add("active");
-    showLogin?.classList.remove("active");
+    showLogin?.classList.add("accent");
+    showLogin?.classList.remove("secondary");
+    showRegister?.classList.add("secondary");
+    showRegister?.classList.remove("accent");
     setAuthMessage("");
-  });
+  }
+
+  function showRegisterTab(): void {
+    if (registerForm) {
+      registerForm.classList.remove("hidden");
+      registerForm.style.display = "block";
+    }
+    if (loginForm) {
+      loginForm.classList.add("hidden");
+      loginForm.style.display = "none";
+    }
+
+    showRegister?.classList.add("accent");
+    showRegister?.classList.remove("secondary");
+    showLogin?.classList.add("secondary");
+    showLogin?.classList.remove("accent");
+    setAuthMessage("");
+  }
+
+  showLogin?.addEventListener("click", showLoginTab);
+  showRegister?.addEventListener("click", showRegisterTab);
 
   loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -492,6 +541,8 @@ function renderAuthScreen(): void {
       );
     }
   });
+
+  showLoginTab();
 }
 
 function renderAppShell(user: AuthUser): void {

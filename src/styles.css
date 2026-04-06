@@ -775,4 +775,121 @@ input[type="time"] {
   .search-section {
     width: 100%;
   }
+
+  .auth-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .auth-center-wrap {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .auth-retro-card {
+    padding: 28px;
+    border-radius: 24px;
+  }
+
+  .auth-logo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .auth-logo {
+    max-width: 420px;
+    width: 100%;
+    height: auto;
+  }
+
+  .auth-title {
+    margin: 10px 0 6px;
+    text-align: center;
+    font-size: 2.2rem;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.45);
+  }
+
+  .auth-subtitle {
+    margin: 0 0 18px;
+    text-align: center;
+    color: #d7e7ff;
+    font-size: 1rem;
+  }
+
+  .auth-tabs {
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+
+  .retro-auth-form {
+    width: 100%;
+  }
+
+  .auth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-button-row {
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .auth-button-row .retro-btn {
+    min-width: 220px;
+  }
+
+  .auth-message {
+    min-height: 24px;
+    margin-bottom: 14px;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .auth-message.error {
+    color: #ff8f8f;
+  }
+
+  .auth-message.success {
+    color: #7dffb3;
+  }
+
+  .auth-form.hidden {
+    display: none !important;
+  }
+
+  .auth-retro-card label {
+    display: block;
+    margin-bottom: 8px;
+    color: #d8e9ff;
+    font-weight: 700;
+  }
+
+  .auth-retro-card input {
+    width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .auth-retro-card {
+      padding: 20px;
+    }
+
+    .auth-title {
+      font-size: 1.8rem;
+    }
+
+    .auth-logo {
+      max-width: 300px;
+    }
+
+    .auth-button-row .retro-btn {
+      width: 100%;
+      min-width: 0;
+    }
+  }
 }
