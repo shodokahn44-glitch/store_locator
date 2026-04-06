@@ -283,11 +283,6 @@ h3 {
   margin-bottom: 15px;
 }
 
-.search-actions {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 15px;
-}
-
 label {
   font-size: 13px;
   color: #b8c7de;
@@ -347,6 +342,8 @@ input[type="time"] {
   align-items: flex-end;
   margin-top: 20px;
   position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
 }
 
 .left-buttons {
@@ -369,6 +366,18 @@ input[type="time"] {
 
 .logout-btn:hover {
   background: #ff4d4d;
+}
+
+/* 🔥 Logout aligned right */
+.logout-inline {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* optional glow polish */
+.logout-inline:hover {
+  background: #ff4d4d;
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.6);
 }
 
 .retro-btn:hover {
@@ -1051,5 +1060,48 @@ input[type="time"] {
       flex-direction: column;
       align-items: flex-start;
     }
+  }
+}
+
+.button-row.with-logout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.button-row.with-logout .left-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.button-row.with-logout .logout-inline {
+  margin-left: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.search-panel h2 {
+  margin-top: 18px;
+}
+
+@media (max-width: 900px) {
+  .button-row.with-logout {
+    align-items: stretch;
+  }
+
+  .button-row.with-logout .left-buttons {
+    width: 100%;
+  }
+
+  .button-row.with-logout .logout-inline {
+    margin-left: 0;
   }
 }

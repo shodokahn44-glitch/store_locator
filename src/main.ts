@@ -747,17 +747,17 @@ function renderAppShell(_user: AuthUser): void {
               </div>
             </div>
 
-            <div class="search-actions-row" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 18px; flex-wrap: wrap;">
-              <div class="button-row" style="margin: 0; flex: 1 1 auto;">
+            <div class="button-row with-logout">
+              <div class="left-buttons">
                 <button id="searchBtn" class="retro-btn" type="button">Search</button>
                 <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
                 <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
                 <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
               </div>
 
-              <div class="search-panel-footer" style="margin-left: auto; display: flex; align-items: flex-end;">
-                <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button" style="margin: 0;">Logout</button>
-              </div>
+              <button id="logoutBtn" class="retro-btn secondary logout-inline" type="button">
+                Logout
+              </button>
             </div>
           </div>
 
@@ -804,11 +804,17 @@ function renderAppShell(_user: AuthUser): void {
               </div>
             </div>
 
-            <div class="button-row">
-              <button id="mediaSearchBtn" class="retro-btn" type="button">Search Media</button>
-              <button id="mediaClearBtn" class="retro-btn secondary" type="button">Clear</button>
-              <button id="mediaLoadAllBtn" class="retro-btn accent" type="button">Load All Media</button>
-              <button id="openAddMediaBtn" class="retro-btn success" type="button">Add Media</button>
+            <div class="button-row with-logout">
+              <div class="left-buttons">
+                <button id="mediaSearchBtn" class="retro-btn" type="button">Search Media</button>
+                <button id="mediaClearBtn" class="retro-btn secondary" type="button">Clear</button>
+                <button id="mediaLoadAllBtn" class="retro-btn accent" type="button">Load All Media</button>
+                <button id="openAddMediaBtn" class="retro-btn success" type="button">Add Media</button>
+              </div>
+
+              <button class="retro-btn secondary logout-inline" type="button" id="logoutBtnMedia">
+                Logout
+              </button>
             </div>
           </div>
 
@@ -865,11 +871,17 @@ function renderAppShell(_user: AuthUser): void {
               </div>
             </div>
 
-            <div class="button-row">
-              <button id="crewSearchBtn" class="retro-btn" type="button">Search Crew</button>
-              <button id="crewClearBtn" class="retro-btn secondary" type="button">Clear</button>
-              <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
-              <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
+            <div class="button-row with-logout">
+              <div class="left-buttons">
+                <button id="crewSearchBtn" class="retro-btn" type="button">Search Crew</button>
+                <button id="crewClearBtn" class="retro-btn secondary" type="button">Clear</button>
+                <button id="crewLoadAllBtn" class="retro-btn accent" type="button">Load All Crew</button>
+                <button id="openAddCrewBtn" class="retro-btn success" type="button">Add Crew</button>
+              </div>
+
+              <button class="retro-btn secondary logout-inline" type="button" id="logoutBtnCrew">
+                Logout
+              </button>
             </div>
           </div>
         </div>
@@ -2308,14 +2320,16 @@ function attachAutoSearch(
 }
 
 function bindEvents(): void {
-  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-    try {
-      await apiRequest(apiUrl("/api/auth/logout"), { method: "POST" });
-      currentUser = null;
-      renderAuthScreen();
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Logout failed.");
-    }
+  ["logoutBtn", "logoutBtnMedia", "logoutBtnCrew"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("click", async () => {
+      try {
+        await apiRequest(apiUrl("/api/auth/logout"), { method: "POST" });
+        currentUser = null;
+        renderAuthScreen();
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Logout failed.");
+      }
+    });
   });
 
   document.getElementById("musicToggleBtn")?.addEventListener("click", () => {
