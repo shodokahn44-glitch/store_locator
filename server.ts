@@ -3,12 +3,24 @@ import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
 import MongoStore from "connect-mongo";
+import nodemailer from "nodemailer";
+
 // @ts-ignore
 import bcrypt from "bcryptjs";
 import { MongoClient, Db, Collection, ObjectId } from "mongodb";
 import path from "path";
 
 dotenv.config();
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false, // IMPORTANT for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -74,6 +86,8 @@ interface UserDocument {
   username: string;
   email: string;
   password: string;
+  full_name?: string;
+  approved?: boolean;
   createdAt: Date;
 }
 
@@ -408,13 +422,14 @@ app.get("/health", async (_req: Request, res: Response) => {
 // AUTH
 app.post("/api/auth/register", async (req: Request, res: Response) => {
   try {
+    const full_name = normalizeString(req.body?.full_name);
     const username = normalizeString(req.body?.username);
     const email = normalizeString(req.body?.email).toLowerCase();
     const password = String(req.body?.password ?? "");
 
-    if (!username || !email || !password) {
+    if (!full_name || !username || !email || !password) {
       return res.status(400).json({
-        error: "Username, email, and password are required.",
+        error: "Full name, username, email, and password are required.",
       });
     }
 
@@ -436,22 +451,32 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
     const hash = await bcrypt.hash(password, 10);
 
-    const result = await usersCollection.insertOne({
+    await usersCollection.insertOne({
+      full_name,
       username,
       email,
       password: hash,
+      approved: false,
       createdAt: new Date(),
     });
 
-    req.session.user = {
-      id: String(result.insertedId),
-      username,
-      email,
-    };
+    // 🔥 SEND EMAIL HERE
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: "mail@nathansalyer.com",
+      subject: "🚀 New User Registration - Approval Needed",
+      html: `
+        <h2>New User Request</h2>
+        <p><strong>Name:</strong> ${full_name}</p>
+        <p><strong>Username:</strong> ${username}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p>Please approve this user in the database.</p>
+      `,
+    });
 
     return res.status(200).json({
       ok: true,
-      user: req.session.user,
+      message: "Registration submitted for approval.",
     });
   } catch (error) {
     console.error("Register failed:", error);
@@ -477,6 +502,12 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     }
 
     const valid = await bcrypt.compare(password, user.password);
+
+    if (!user.approved) {
+      return res.status(403).json({
+        error: "Your account is pending approval.",
+      });
+    }
 
     if (!valid) {
       return res.status(401).json({ error: "Invalid email or password." });
