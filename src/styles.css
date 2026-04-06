@@ -168,13 +168,12 @@ body {
 }
 
 .hero-logo {
-  display: block;
   width: clamp(560px, 80vw, 1200px);
   height: auto;
+  display: block;
   margin: 0 auto;
-  object-fit: contain;
-  object-position: center center;
-  transform: translateX(0px);
+  position: relative;
+  left: -28px; /* adjust this value if needed */
   filter: drop-shadow(0 0 12px rgba(255, 0, 255, 0.6));
   animation: logoGlow 3s ease-in-out infinite alternate;
 }
