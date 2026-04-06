@@ -184,6 +184,13 @@ body {
   margin-bottom: 18px;
 }
 
+.left-column-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-self: start;
+}
+
 .panel {
   border-radius: 22px;
   padding: 18px 16px;
@@ -431,7 +438,11 @@ input[type="time"] {
 }
 
 .admin-panel {
-  margin-bottom: 18px;
+  margin-bottom: 0;
+}
+
+.compact-admin-panel {
+  padding: 14px 14px 12px;
 }
 
 .admin-panel-header {
@@ -443,26 +454,41 @@ input[type="time"] {
   flex-wrap: wrap;
 }
 
+.compact-admin-header {
+  margin-bottom: 10px;
+}
+
 .admin-panel-subtitle {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #cfd8e3;
-  font-size: 14px;
+  font-size: 12px;
   opacity: 0.9;
+}
+
+.admin-refresh-btn {
+  padding: 8px 12px;
+  font-size: 12px;
 }
 
 .pending-users-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+
+.compact-pending-users-list .status-bar {
+  margin-bottom: 0;
+  padding: 10px 12px;
+  font-size: 13px;
 }
 
 .pending-user-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  padding: 14px;
-  border-radius: 16px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
   background: rgba(10, 20, 42, 0.7);
   border: 1px solid rgba(110, 145, 210, 0.18);
 }
@@ -470,14 +496,20 @@ input[type="time"] {
 .pending-user-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   color: #d7e7ff;
+  font-size: 12px;
 }
 
 .pending-user-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.compact-admin-panel .pending-user-actions .retro-btn {
+  padding: 8px 12px;
+  font-size: 12px;
 }
 
 .toast {
@@ -936,6 +968,10 @@ input[type="time"] {
 @media (max-width: 1100px) {
   .top-row {
     grid-template-columns: 1fr;
+  }
+
+  .left-column-stack {
+    width: 100%;
   }
 
   .hero-logo {

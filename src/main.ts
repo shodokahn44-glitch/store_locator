@@ -659,27 +659,9 @@ function renderAppShell(_user: AuthUser): void {
         <p class="hero-tagline">Search stores, media, crew, add new locations, and keep the catalog synced.</p>
       </header>
 
-      ${
-        _user.is_admin
-          ? `
-      <section class="panel retro-panel admin-panel">
-        <div class="admin-panel-header">
-          <div>
-            <h2>Admin Panel</h2>
-            <p class="admin-panel-subtitle">Approve or reject pending account requests without opening MongoDB.</p>
-          </div>
-          <button id="refreshPendingUsersBtn" class="retro-btn accent" type="button">Refresh Requests</button>
-        </div>
-        <div id="pendingUsersList" class="pending-users-list">
-          <div class="status-bar">Loading pending users...</div>
-        </div>
-      </section>
-      `
-          : ""
-      }
-
       <section class="top-row">
-        <div class="panel retro-panel music-panel">
+        <div class="left-column-stack">
+          <div class="panel retro-panel music-panel">
           <h2>Soundtrack</h2>
 
           <div class="audio-panel">
@@ -698,6 +680,26 @@ function renderAppShell(_user: AuthUser): void {
               <div class="song-artist">John McCarthy - Nintendo Quest (Official 8-bit Soundtrack)</div>
             </div>
           </div>
+          </div>
+
+          ${
+            _user.is_admin
+              ? `
+          <section class="panel retro-panel admin-panel compact-admin-panel">
+            <div class="admin-panel-header compact-admin-header">
+              <div>
+                <h2>Admin Panel</h2>
+                <p class="admin-panel-subtitle">Approve or reject pending account requests.</p>
+              </div>
+              <button id="refreshPendingUsersBtn" class="retro-btn accent admin-refresh-btn" type="button">Refresh</button>
+            </div>
+            <div id="pendingUsersList" class="pending-users-list compact-pending-users-list">
+              <div class="status-bar">Loading pending users...</div>
+            </div>
+          </section>
+          `
+              : ""
+          }
         </div>
 
         <div class="panel retro-panel search-panel">
