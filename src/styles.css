@@ -911,16 +911,23 @@ input[type="time"] {
       color: #7fd6ff;
     }
 
-    .search-panel-footer {
+    /* Top row: mode buttons + logout */
+    .top-controls {
       display: flex;
-      justify-content: flex-end;
-      margin-top: 14px;
-      width: 100%;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
     }
 
-    .logout-floating-btn {
-      min-width: 140px;
-      margin-left: auto;
+    /* Keep mode buttons grouped */
+    .mode-switcher {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Logout on right */
+    .logout-top {
+      min-width: 120px;
     }
   }
 }

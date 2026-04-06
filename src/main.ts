@@ -579,11 +579,15 @@ function renderAppShell(_user: AuthUser): void {
         </div>
 
         <div class="panel retro-panel search-panel">
-          <div class="mode-switcher">
-            <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
-            <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
-            <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
-          </div>
+         <div class="top-controls">
+  <div class="mode-switcher">
+    <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
+    <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
+    <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
+  </div>
+
+  <button id="logoutBtn" class="retro-btn secondary logout-top" type="button">Logout</button>
+</div>
 
           <h2 id="searchPanelTitle">Search Stores</h2>
 
@@ -651,10 +655,7 @@ function renderAppShell(_user: AuthUser): void {
     <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
   </div>
 
-  <div class="search-panel-footer">
-    <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
-  </div>
-</div>
+
 
           <div id="mediaSearchSection" class="search-section hidden" style="display:none;">
             <div class="search-grid">
