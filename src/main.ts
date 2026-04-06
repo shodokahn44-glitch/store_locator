@@ -688,7 +688,7 @@ function renderAppShell(_user: AuthUser): void {
             <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
           </div>
 
-          <h2 id="searchPanelTitle">Search Stores</h2>
+          <h2 id="searchPanelTitle" style="margin-top: 18px;">Search Stores</h2>
 
           <div id="storeSearchSection" class="search-section" style="display:block;">
             <div class="search-grid">
@@ -747,15 +747,17 @@ function renderAppShell(_user: AuthUser): void {
               </div>
             </div>
 
-            <div class="button-row">
-              <button id="searchBtn" class="retro-btn" type="button">Search</button>
-              <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
-              <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
-              <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
-            </div>
+            <div class="search-actions-row" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 18px; flex-wrap: wrap;">
+              <div class="button-row" style="margin: 0; flex: 1 1 auto;">
+                <button id="searchBtn" class="retro-btn" type="button">Search</button>
+                <button id="clearBtn" class="retro-btn secondary" type="button">Clear</button>
+                <button id="loadAllBtn" class="retro-btn accent" type="button">Load All</button>
+                <button id="openModalBtn" class="join-btn" type="button">Join the Quest</button>
+              </div>
 
-            <div class="search-panel-footer">
-              <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button">Logout</button>
+              <div class="search-panel-footer" style="margin-left: auto; display: flex; align-items: flex-end;">
+                <button id="logoutBtn" class="retro-btn secondary logout-floating-btn" type="button" style="margin: 0;">Logout</button>
+              </div>
             </div>
           </div>
 

@@ -275,6 +275,19 @@ h3 {
   min-width: 0;
 }
 
+.search-container {
+  margin-top: 25px;
+}
+
+.search-tabs {
+  margin-bottom: 15px;
+}
+
+.search-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}
+
 label {
   font-size: 13px;
   color: #b8c7de;
@@ -326,6 +339,36 @@ input[type="time"] {
   transition:
     transform 0.12s ease,
     filter 0.12s ease;
+}
+
+.search-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 20px;
+  position: relative;
+}
+
+.left-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 🔥 Logout pinned bottom-right */
+.logout-btn {
+  position: absolute;
+  right: 0;
+  bottom: -10px;
+  background: #2c2f4a;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 14px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: #ff4d4d;
 }
 
 .retro-btn:hover {
