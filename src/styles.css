@@ -145,21 +145,21 @@ body {
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 28px 20px 24px;
+  padding: 12px 20px 24px;
 }
 
 .page-hero {
   text-align: center;
   padding: 0;
-  margin: 0 0 18px;
+  margin: 0 0 4px;
 }
 
 .hero-logo-wrap {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: -40px;
-  margin-bottom: -20px;
+  margin-top: -36px;
+  margin-bottom: -92px;
 }
 
 .hero-logo {
@@ -171,8 +171,8 @@ body {
 }
 
 .hero-tagline {
-  margin-top: 4px;
-  margin-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: 2px;
   font-size: 0.95rem;
   opacity: 0.8;
 }
@@ -284,7 +284,7 @@ h3 {
 }
 
 .search-container {
-  margin-top: 25px;
+  margin-top: 12px;
 }
 
 .search-tabs {
@@ -978,11 +978,9 @@ input[type="time"] {
   width: 100%;
   z-index: 999;
   overflow: hidden;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 12px 18px;
   text-align: center;
   font-size: 12px;
@@ -990,24 +988,19 @@ input[type="time"] {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #00fff7;
-
   background: linear-gradient(
     to top,
     rgba(0, 0, 0, 0.92),
     rgba(6, 14, 28, 0.78)
   );
-
   border-top: 1px solid rgba(0, 255, 247, 0.35);
-
   text-shadow:
     0 0 5px #00fff7,
     0 0 10px #00fff7,
     0 0 18px rgba(0, 255, 247, 0.9);
-
   box-shadow:
     0 0 10px rgba(0, 255, 247, 0.35),
     0 -2px 18px rgba(0, 255, 247, 0.15);
-
   backdrop-filter: blur(6px);
   animation: footerNeonFlicker 3s infinite alternate;
 }
@@ -1079,7 +1072,13 @@ input[type="time"] {
   }
 
   .hero-logo {
-    max-height: 140px;
+    width: min(100%, 980px);
+    max-height: none;
+  }
+
+  .hero-logo-wrap {
+    margin-top: -24px;
+    margin-bottom: -70px;
   }
 }
 
@@ -1099,7 +1098,7 @@ input[type="time"] {
 
 @media (max-width: 820px) {
   .page {
-    padding: 18px 14px;
+    padding: 10px 14px 18px;
   }
 
   .search-grid,
@@ -1112,7 +1111,17 @@ input[type="time"] {
   }
 
   .hero-logo {
-    width: min(100%, 420px);
+    width: min(100%, 760px);
+  }
+
+  .hero-logo-wrap {
+    margin-top: -10px;
+    margin-bottom: -40px;
+  }
+
+  .hero-tagline {
+    margin-top: 2px;
+    margin-bottom: 6px;
   }
 
   .store-detail-main-grid {
@@ -1138,7 +1147,7 @@ input[type="time"] {
   }
 
   .auth-logo {
-    max-width: 320px;
+    max-width: 640px;
   }
 
   .auth-grid-single {
@@ -1211,7 +1220,7 @@ input[type="time"] {
   }
 
   .auth-logo {
-    max-width: 300px;
+    max-width: 600px;
   }
 
   .top-controls {
@@ -1226,6 +1235,20 @@ input[type="time"] {
     font-size: 11px;
     letter-spacing: 1.5px;
     padding: 11px 12px;
+  }
+
+  .hero-logo {
+    width: min(100%, 520px);
+  }
+
+  .hero-logo-wrap {
+    margin-top: -4px;
+    margin-bottom: -18px;
+  }
+
+  .hero-tagline {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
   }
 }
 
