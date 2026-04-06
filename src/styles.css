@@ -172,8 +172,9 @@ body {
   height: auto;
   display: block;
   margin: 0 auto;
-  position: relative;
-  left: -28px; /* adjust this value if needed */
+
+  transform: translateX(-22px); /* 👈 sweet spot */
+
   filter: drop-shadow(0 0 12px rgba(255, 0, 255, 0.6));
   animation: logoGlow 3s ease-in-out infinite alternate;
 }
