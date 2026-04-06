@@ -920,5 +920,25 @@ input[type="time"] {
     .store-link:visited {
       color: #7fd6ff;
     }
+
+    /* Make search panel relative so we can anchor inside it */
+    .search-panel {
+      position: relative;
+    }
+
+    /* Logout button pinned to right side */
+    .logout-floating {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 10;
+    }
+
+    .logout-floating {
+      position: absolute;
+      right: 20px;
+      top: 72%;
+      transform: translateY(-50%);
+    }
   }
 }
