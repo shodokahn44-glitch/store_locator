@@ -579,13 +579,10 @@ function renderAppShell(_user: AuthUser): void {
         </div>
 
         <div class="panel retro-panel search-panel">
-         <div class="top-controls">
-  <div class="mode-switcher">
-    <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
-    <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
-    <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
-  </div>
-
+        <div class="top-controls">
+  <button id="modeStoresBtn" class="retro-btn accent" type="button">Store Search</button>
+  <button id="modeMediaBtn" class="retro-btn secondary" type="button">Media Search</button>
+  <button id="modeCrewBtn" class="retro-btn secondary" type="button">Crew Search</button>
   <button id="logoutBtn" class="retro-btn secondary logout-top" type="button">Logout</button>
 </div>
 

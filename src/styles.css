@@ -914,19 +914,14 @@ input[type="time"] {
     /* Top row: mode buttons + logout */
     .top-controls {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
-    }
-
-    /* Keep mode buttons grouped */
-    .mode-switcher {
-      display: flex;
       gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: nowrap;
     }
 
-    /* Logout on right */
     .logout-top {
+      margin-left: auto;
       min-width: 120px;
     }
   }
