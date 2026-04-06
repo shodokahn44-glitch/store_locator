@@ -930,8 +930,7 @@ input[type="time"] {
     .logout-floating {
       position: absolute;
       right: 20px;
-      bottom: 20px; /* aligns nicely with button row */
-      z-index: 10;
+      top: calc(100% - 48px); /* aligns with button row height */
     }
 
     /* Optional: keep spacing clean so it doesn’t overlap buttons */

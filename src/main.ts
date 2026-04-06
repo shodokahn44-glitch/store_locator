@@ -389,6 +389,7 @@ function renderAuthScreen(): void {
 
             <div class="button-row auth-button-row">
               <button class="retro-btn accent" type="submit">Login</button>
+              <button class="retro-btn secondary logout-floating">Logout</button>
             </div>
           </form>
 
