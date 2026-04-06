@@ -174,7 +174,7 @@ body {
   margin: 0 auto;
   object-fit: contain;
   object-position: center center;
-  transform: translateX(-16px);
+  transform: translateX(-8px);
   filter: drop-shadow(0 0 12px rgba(255, 0, 255, 0.6));
   animation: logoGlow 3s ease-in-out infinite alternate;
 }
